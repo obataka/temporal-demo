@@ -24,6 +24,7 @@ from activities.llm_activity import call_llm_activity
 from activities.mock_activity import call_mock_llm_activity
 from workflows.ai_agent_workflow import ai_agent_workflow
 from workflows.comparison_workflow import comparison_workflow
+from workflows.immortal_agent_workflow import immortal_agent_workflow
 
 TEMPORAL_HOST = os.environ.get("TEMPORAL_HOST", "localhost:7233")
 TASK_QUEUE = "llm-task-queue"
@@ -55,7 +56,7 @@ async def main() -> None:
     worker = Worker(
         client,
         task_queue=TASK_QUEUE,
-        workflows=[ai_agent_workflow, comparison_workflow],
+        workflows=[ai_agent_workflow, comparison_workflow, immortal_agent_workflow],
         activities=[call_llm_activity, call_mock_llm_activity],
     )
 
