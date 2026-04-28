@@ -20,10 +20,11 @@ load_dotenv()
 from temporalio.client import Client
 from temporalio.worker import Worker
 
-from activities.llm_activity import call_llm_activity
+from activities.llm_activity import call_llm_activity, call_llm_with_context_activity
 from activities.mock_activity import call_mock_llm_activity
 from workflows.ai_agent_workflow import ai_agent_workflow
 from workflows.comparison_workflow import comparison_workflow
+from workflows.hitl_agent_workflow import hitl_agent_workflow
 from workflows.immortal_agent_workflow import immortal_agent_workflow
 
 TEMPORAL_HOST = os.environ.get("TEMPORAL_HOST", "localhost:7233")
@@ -56,8 +57,8 @@ async def main() -> None:
     worker = Worker(
         client,
         task_queue=TASK_QUEUE,
-        workflows=[ai_agent_workflow, comparison_workflow, immortal_agent_workflow],
-        activities=[call_llm_activity, call_mock_llm_activity],
+        workflows=[ai_agent_workflow, comparison_workflow, immortal_agent_workflow, hitl_agent_workflow],
+        activities=[call_llm_activity, call_llm_with_context_activity, call_mock_llm_activity],
     )
 
     logger.info("worker_started", task_queue=TASK_QUEUE,

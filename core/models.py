@@ -4,6 +4,7 @@ Temporal ワークフロー Sandbox からもインポート可能（os/structlo
 """
 
 from dataclasses import dataclass, field
+from typing import Optional
 
 
 @dataclass
@@ -15,6 +16,15 @@ class LLMResult:
     output_tokens: int
     total_tokens: int
     latency_ms: float
+
+
+@dataclass
+class LLMRequest:
+    """HITL ワークフローが Activity に渡す構造化リクエスト。Temporal がシリアライズできる。"""
+    user_message: str
+    attempt: int = 0
+    previous_answer: Optional[str] = None  # リトライ時: 前回の回答
+    feedback: Optional[str] = None         # リトライ時: 人間からのフィードバック
 
 
 @dataclass
