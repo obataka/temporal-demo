@@ -4,7 +4,7 @@ Temporal ワークフロー Sandbox からもインポート可能（os/structlo
 """
 
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import Optional, List
 
 
 @dataclass
@@ -54,3 +54,16 @@ class AgentStats:
         if self.tasks_completed == 0:
             return 0.0
         return round(self.total_latency_ms / self.tasks_completed, 1)
+
+
+@dataclass
+class SOPRequest:
+    """SOP 生成ワークフローが Activity に渡す構造化リクエスト。Temporal がシリアライズできる。"""
+    topic: str                              # ドキュメント化対象の説明
+    source_code: str                        # 対象ソースコード
+    phase: str                              # "outline" | "draft" | "review"
+    attempt: int = 0                        # フェーズ内リトライ回数
+    previous_output: Optional[str] = None  # 同フェーズ前回出力（リトライ時）
+    outline: Optional[str] = None          # 承認済みアウトライン（draft/review フェーズ）
+    draft: Optional[str] = None            # 承認済み草稿（review フェーズ）
+    feedback: Optional[str] = None         # 人間からのフィードバック（リトライ時）
