@@ -57,6 +57,25 @@ class AgentStats:
 
 
 @dataclass
+class AgentReviewRequest:
+    """agentic_review_workflow が Agent Activity に渡すリクエスト。Temporal がシリアライズできる。"""
+    draft: str                                  # レビュー対象の SOP 草稿
+    agent_role: str                             # "proofreader" | "tech_reviewer"
+    hints: List[str] = field(default_factory=list)   # Signal で注入されたヒント
+    proofreader_output: Optional[str] = None    # tech_reviewer 専用: 校正担当の出力
+
+
+@dataclass
+class AgentResult:
+    """Agent Activity の実行結果。Temporal がシリアライズできる。"""
+    agent_role: str
+    output: str
+    thoughts: List[str]    # task_callback で収集した中間ステップ出力
+    tokens: int
+    latency_ms: float
+
+
+@dataclass
 class SOPRequest:
     """SOP 生成ワークフローが Activity に渡す構造化リクエスト。Temporal がシリアライズできる。"""
     topic: str                              # ドキュメント化対象の説明

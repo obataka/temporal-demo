@@ -22,7 +22,9 @@ from temporalio.worker import Worker
 
 from activities.llm_activity import call_llm_activity, call_llm_with_context_activity
 from activities.mock_activity import call_mock_llm_activity
+from activities.crew_activity import merge_reviews_activity, run_agent_activity
 from activities.sop_activity import generate_sop_phase_activity
+from workflows.agentic_review_workflow import agentic_review_workflow
 from workflows.ai_agent_workflow import ai_agent_workflow
 from workflows.comparison_workflow import comparison_workflow
 from workflows.hitl_agent_workflow import hitl_agent_workflow
@@ -59,8 +61,8 @@ async def main() -> None:
     worker = Worker(
         client,
         task_queue=TASK_QUEUE,
-        workflows=[ai_agent_workflow, comparison_workflow, immortal_agent_workflow, hitl_agent_workflow, sop_generation_workflow],
-        activities=[call_llm_activity, call_llm_with_context_activity, call_mock_llm_activity, generate_sop_phase_activity],
+        workflows=[ai_agent_workflow, comparison_workflow, immortal_agent_workflow, hitl_agent_workflow, sop_generation_workflow, agentic_review_workflow],
+        activities=[call_llm_activity, call_llm_with_context_activity, call_mock_llm_activity, generate_sop_phase_activity, run_agent_activity, merge_reviews_activity],
     )
 
     logger.info("worker_started", task_queue=TASK_QUEUE,
