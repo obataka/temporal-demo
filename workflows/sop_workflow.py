@@ -5,9 +5,10 @@ SOP Generation Workflow — Step-by-Step Approval with Dynamic Refinement
 フィードバックがあれば同フェーズを再生成（Dynamic Refinement）する。
 
 Phases:
-    1. outline : 章立て提案
-    2. draft   : 詳細執筆
-    3. review  : 最終レビュー
+    1. outline        : 章立て提案
+    2. draft          : 詳細執筆
+    3. review         : 最終レビュー
+    4. autonomous_fix : ルールベース検証 → AI修正（最大3回）
 
 Signals:
     approve_step(feedback: str)
@@ -176,6 +177,16 @@ class sop_generation_workflow:
 
             if v_result.passed:
                 self._approved["review"] = final_sop
+                self._history.append({
+                    "phase": "autonomous_fix",
+                    "phase_label": PHASE_LABELS["autonomous_fix"],
+                    "attempt": self._fix_attempt,
+                    "failures": [],
+                    "output": final_sop,
+                    "tokens": 0,
+                    "latency_ms": 0,
+                    "approved": True,
+                })
                 break
 
             self._status = "fixing"
@@ -228,6 +239,7 @@ class sop_generation_workflow:
             validate_sop_activity,
             sop_text,
             start_to_close_timeout=timedelta(seconds=30),
+            retry_policy=LLM_RETRY_POLICY,
         )
 
     async def _call_fix(self, sop_text: str, failures: list[str]) -> LLMResult:
