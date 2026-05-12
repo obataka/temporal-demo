@@ -86,3 +86,11 @@ class SOPRequest:
     outline: Optional[str] = None          # 承認済みアウトライン（draft/review フェーズ）
     draft: Optional[str] = None            # 承認済み草稿（review フェーズ）
     feedback: Optional[str] = None         # 人間からのフィードバック（リトライ時）
+
+
+@dataclass
+class ValidationResult:
+    """SOP 品質検証の結果。validate_sop_activity が返す。"""
+    passed: bool
+    failures: list[str]
+    score: dict
