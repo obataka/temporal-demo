@@ -5,10 +5,11 @@ SOP 品質検証 Activity — ルールベースで SOP テキストを検証す
 外部 API・ファイル IO を持たないため、リトライポリシー不要。
 
 Rules:
-    min_word_count    : 文字数 ≥ 500
-    required_sections : ## 見出し ≥ 3 個
-    has_code_block    : バッククォート3つのブロックが 1 個以上
-    no_placeholder    : TODO / TBD / [TODO] を含まない
+    min_word_count      : 文字数 ≥ 500
+    required_sections   : ## 見出し ≥ 3 個
+    has_code_block      : バッククォート3つのブロックが 1 個以上
+    no_placeholder      : TODO / TBD / [TODO] を含まない
+    no_prohibited_terms : 未定 / 確認中 / 作成中 / 仮 を含まない
 """
 
 import re
@@ -20,10 +21,12 @@ from core.models import ValidationResult
 _MIN_CHARS = 500
 _MIN_SECTIONS = 3
 
+_PROHIBITED_TERMS = ["未定", "確認中", "作成中", "仮"]
+
 
 def _run_rules(sop_text: str) -> tuple[list[str], dict]:
     """
-    4つのルールを評価し、失敗リストとスコア dict を返す。
+    5つのルールを評価し、失敗リストとスコア dict を返す。
 
     :param sop_text: 検証対象の SOP 全文
     :returns: (failures, score) のタプル
@@ -48,6 +51,10 @@ def _run_rules(sop_text: str) -> tuple[list[str], dict]:
 
     if re.search(r"\bTODO\b|\bTBD\b|\[TODO\]", sop_text, re.IGNORECASE):
         failures.append("未完成プレースホルダーが含まれる (TODO / TBD / [TODO])")
+
+    found = [t for t in _PROHIBITED_TERMS if t in sop_text]
+    if found:
+        failures.append(f"禁止用語が含まれる: {', '.join(found)}")
 
     return failures, score
 

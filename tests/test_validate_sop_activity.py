@@ -107,3 +107,32 @@ async def test_validate_activity_failed_returns_validation_result():
     assert isinstance(result, ValidationResult)
     assert result.passed is False
     assert len(result.failures) > 0
+
+
+# ─── 禁止用語チェック (no_prohibited_terms) ──────────────────────────────────
+
+
+def test_prohibited_term_miteii_fails():
+    """「未定」を含む SOP が禁止用語エラーを返すことを確認。"""
+    from activities.validate_sop_activity import _run_rules
+
+    sop_with_miteii = GOOD_SOP + "\nこの手順は未定です。"
+    failures, _ = _run_rules(sop_with_miteii)
+    assert any("禁止用語" in f for f in failures)
+
+
+def test_prohibited_term_kakuninchuu_fails():
+    """「確認中」を含む SOP が禁止用語エラーを返すことを確認。"""
+    from activities.validate_sop_activity import _run_rules
+
+    sop_with_kakuninchuu = GOOD_SOP + "\n担当者を確認中。"
+    failures, _ = _run_rules(sop_with_kakuninchuu)
+    assert any("禁止用語" in f for f in failures)
+
+
+def test_good_sop_has_no_prohibited_terms():
+    """禁止用語を含まない SOP がエラーなしで通ることを確認。"""
+    from activities.validate_sop_activity import _run_rules
+
+    failures, _ = _run_rules(GOOD_SOP)
+    assert not any("禁止用語" in f for f in failures)
