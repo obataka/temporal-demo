@@ -24,6 +24,7 @@ from activities.llm_activity import call_llm_activity, call_llm_with_context_act
 from activities.mock_activity import call_mock_llm_activity
 from activities.crew_activity import merge_reviews_activity, run_agent_activity
 from activities.fix_sop_activity import fix_sop_activity
+from activities.github_activity import GitHubActivity
 from activities.sop_activity import generate_sop_phase_activity
 from activities.validate_sop_activity import validate_sop_activity
 from workflows.agentic_review_workflow import agentic_review_workflow
@@ -60,6 +61,8 @@ async def main() -> None:
 
     client = await connect_with_retry(TEMPORAL_HOST)
 
+    _github_activity = GitHubActivity()
+
     worker = Worker(
         client,
         task_queue=TASK_QUEUE,
@@ -73,6 +76,7 @@ async def main() -> None:
             fix_sop_activity,
             run_agent_activity,
             merge_reviews_activity,
+            _github_activity.create_pull_request,
         ],
     )
 

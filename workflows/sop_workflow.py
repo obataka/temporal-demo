@@ -14,6 +14,8 @@ Signals:
     approve_step(feedback: str)
         "" (空文字)  → 現フェーズを承認して次フェーズへ進む
         非空文字    → フィードバックとして同フェーズを再生成
+    approve_pr()
+        require_approval=True 時、Phase 5 直前に呼び出して PR 作成を解放する
 
 Queries:
     get_status() -> dict    current_phase / status / attempt / current_output
@@ -25,13 +27,14 @@ from datetime import timedelta
 from temporalio import workflow
 from temporalio.exceptions import ApplicationError
 
-from core.models import SOPRequest, LLMResult, ValidationResult
+from core.models import SOPRequest, LLMResult, ValidationResult, GitHubParams
 from core.retry_policy import LLM_RETRY_POLICY
 
 with workflow.unsafe.imports_passed_through():
     from activities.sop_activity import generate_sop_phase_activity
     from activities.validate_sop_activity import validate_sop_activity
     from activities.fix_sop_activity import fix_sop_activity
+    from activities.github_activity import GitHubActivity
 
 PHASES = ["outline", "draft", "review"]
 
@@ -40,6 +43,7 @@ PHASE_LABELS = {
     "draft":          "フェーズ2: 詳細執筆",
     "review":         "フェーズ3: 最終レビュー",
     "autonomous_fix": "フェーズ4: 自律修正",
+    "github_pr":      "フェーズ5: GitHub PR作成",
 }
 
 MAX_FIX_ATTEMPTS = 3
@@ -69,6 +73,10 @@ class sop_generation_workflow:
         # 自律修正ループ状態
         self._fix_attempt: int = 0
         self._validation_result: dict | None = None
+        self._pr_url: str | None = None
+
+        # PR 承認ゲート（require_approval=True 時に approve_pr Signal を待つ）
+        self._pr_approved: bool = False
 
     # ─── Signal Handlers ─────────────────────────────────────────────────────
 
@@ -80,6 +88,16 @@ class sop_generation_workflow:
         """
         self._step_feedback = feedback
         self._signal_received = True
+
+    @workflow.signal
+    def approve_pr(self) -> None:
+        """
+        Phase 5（GitHub PR 作成）の実行を承認する。
+
+        GitHubParams.require_approval=True のワークフローでのみ使用する。
+        呼び出し後、wait_condition が解除されて PR 作成が開始される。
+        """
+        self._pr_approved = True
 
     # ─── Query Handlers ──────────────────────────────────────────────────────
 
@@ -94,6 +112,8 @@ class sop_generation_workflow:
             "approved_phases": list(self._approved.keys()),
             "fix_attempt": self._fix_attempt,
             "validation_result": self._validation_result,
+            "pr_url": self._pr_url,
+            "pr_approved": self._pr_approved,
         }
 
     @workflow.query
@@ -104,7 +124,12 @@ class sop_generation_workflow:
     # ─── Main ────────────────────────────────────────────────────────────────
 
     @workflow.run
-    async def run(self, topic: str, source_code: str) -> dict:
+    async def run(
+        self,
+        topic: str,
+        source_code: str,
+        github_params: GitHubParams | None = None,
+    ) -> dict:
         self._topic = topic
 
         for phase in PHASES:
@@ -209,6 +234,20 @@ class sop_generation_workflow:
                 non_retryable=True,
             )
 
+        # ── Phase 5: GitHub PR 作成（github_params が指定された場合のみ）─────────
+        if github_params is not None:
+            self._current_phase = "github_pr"
+            if github_params.require_approval:
+                self._status = "awaiting_pr_approval"
+                await workflow.wait_condition(lambda: self._pr_approved)
+            self._status = "creating_pr"
+            pr_result = await self._call_github_pr(
+                sop_text=final_sop,
+                topic=topic,
+                github_params=github_params,
+            )
+            self._pr_url = pr_result["pr_url"]
+
         self._status = "completed"
         self._current_phase = "completed"
 
@@ -218,13 +257,14 @@ class sop_generation_workflow:
             "draft": self._approved.get("draft", ""),
             "review": self._approved.get("review", ""),
             "history": self._history,
+            "pr_url": self._pr_url,
         }
 
     async def _call_llm(self, request: SOPRequest) -> LLMResult:
         return await workflow.execute_activity(
             generate_sop_phase_activity,
             request,
-            start_to_close_timeout=timedelta(seconds=180),
+            start_to_close_timeout=timedelta(minutes=7),
             retry_policy=LLM_RETRY_POLICY,
         )
 
@@ -253,6 +293,41 @@ class sop_generation_workflow:
         return await workflow.execute_activity(
             fix_sop_activity,
             args=[sop_text, failures],
-            start_to_close_timeout=timedelta(seconds=180),
+            start_to_close_timeout=timedelta(minutes=7),
+            retry_policy=LLM_RETRY_POLICY,
+        )
+
+    async def _call_github_pr(
+        self,
+        sop_text: str,
+        topic: str,
+        github_params: GitHubParams,
+    ) -> dict:
+        """
+        GitHubActivity.create_pull_request を実行して PR URL を返す。
+
+        :param sop_text: 最終承認済み SOP 全文
+        :param topic: SOP のトピック名（PR タイトル/コミットメッセージに使用）
+        :param github_params: GitHub 操作に必要なメタデータ
+        :returns: {"pr_url": "https://github.com/.../pull/N"}
+        """
+        params = {
+            "repository":     github_params.repository,
+            "base_branch":    github_params.base_branch,
+            "feature_branch": github_params.feature_branch,
+            "file_path":      github_params.file_path,
+            "file_content":   sop_text,
+            "commit_message": f"docs: auto-generated SOP for {topic}",
+            "pr_title":       f"[Auto SOP] {topic}",
+            "pr_body": (
+                f"このPRは `sop_generation_workflow` により自動生成されました。\n\n"
+                f"**トピック:** {topic}\n\n"
+                f"バリデーション（{MAX_FIX_ATTEMPTS}回以内）を通過した最終版SOPです。"
+            ),
+        }
+        return await workflow.execute_activity(
+            GitHubActivity.create_pull_request,
+            params,
+            start_to_close_timeout=timedelta(minutes=7),
             retry_policy=LLM_RETRY_POLICY,
         )

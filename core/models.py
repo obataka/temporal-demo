@@ -94,3 +94,13 @@ class ValidationResult:
     passed: bool
     failures: list[str]
     score: dict
+
+
+@dataclass
+class GitHubParams:
+    """GitHub PR 作成に必要なメタデータ。sop_generation_workflow の run() に渡す。"""
+    repository: str       # "owner/repo"
+    base_branch: str      # "main"
+    feature_branch: str   # "auto-fix/sop-xxx"
+    file_path: str = "docs/sop.md"  # リポジトリ内の保存先パス
+    require_approval: bool = False   # True: PR 作成前に approve_pr Signal を待つ
