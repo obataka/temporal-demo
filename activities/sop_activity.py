@@ -14,7 +14,7 @@ from temporalio import activity
 
 from core.models import SOPRequest, LLMResult
 
-_MODEL = "gemini-2.5-flash"
+_MODEL = "gemini-2.5-flash-lite"
 
 _SYSTEM = {
     "outline": (

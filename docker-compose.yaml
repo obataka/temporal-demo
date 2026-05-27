@@ -108,7 +108,18 @@ services:
     networks:
       - temporal-network
     ports:
+      - 3001:3000
+
+  web-ui:
+    container_name: temporal-web-ui
+    build: ./web-ui
+    environment:
+      - TEMPORAL_HOST=temporal:7233
+    networks:
+      - temporal-network
+    ports:
       - 3000:3000
+    restart: unless-stopped
 
 networks:
   temporal-network:

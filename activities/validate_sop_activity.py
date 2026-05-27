@@ -9,7 +9,8 @@ Rules:
     required_sections   : ## 見出し ≥ 3 個
     has_code_block      : バッククォート3つのブロックが 1 個以上
     no_placeholder      : TODO / TBD / [TODO] を含まない
-    no_prohibited_terms : 未定 / 確認中 / 作成中 / 仮 を含まない
+    no_prohibited_terms : 未定 / 確認中 / 作成中 を含まない
+                          （"仮" は 仮定・仮説 等の複合語と区別できないため対象外）
 """
 
 import re
@@ -21,7 +22,7 @@ from core.models import ValidationResult
 _MIN_CHARS = 500
 _MIN_SECTIONS = 3
 
-_PROHIBITED_TERMS = ["未定", "確認中", "作成中", "仮"]
+_PROHIBITED_TERMS = ["未定", "確認中", "作成中"]
 
 
 def _run_rules(sop_text: str) -> tuple[list[str], dict]:

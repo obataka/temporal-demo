@@ -12,7 +12,7 @@ from temporalio import activity
 
 from core.models import LLMResult
 
-_MODEL = "gemini-2.5-flash"
+_MODEL = "gemini-2.5-flash-lite"
 
 _SYSTEM_INSTRUCTION = (
     "あなたは SOP 品質改善の専門家です。"

@@ -1,0 +1,146 @@
+{
+  "version": "1.0",
+  "timestamp": "2026-05-27T01:18:05.010Z",
+  "source": "auto-postool",
+  "partial": false,
+  "phase": null,
+  "phase_name": null,
+  "phase_dir": null,
+  "plan": null,
+  "task": null,
+  "total_tasks": null,
+  "status": "auto-checkpoint",
+  "completed_tasks": [],
+  "remaining_tasks": [],
+  "blockers": [],
+  "human_actions_pending": [],
+  "decisions": [],
+  "uncommitted_files": [
+    {
+      "status": "M",
+      "path": "LESSON.md"
+    },
+    {
+      "status": "M",
+      "path": "activities/fix_sop_activity.py"
+    },
+    {
+      "status": "M",
+      "path": "activities/sop_activity.py"
+    },
+    {
+      "status": "M",
+      "path": "activities/validate_sop_activity.py"
+    },
+    {
+      "status": "M",
+      "path": "docker-compose.yaml"
+    },
+    {
+      "status": "??",
+      "path": ".planning/"
+    },
+    {
+      "status": "??",
+      "path": "evidence/"
+    },
+    {
+      "status": "??",
+      "path": "hitl_webui_demo.py"
+    },
+    {
+      "status": "??",
+      "path": "plan/2026-05-22-01-e2e-grand-demo-plan.md"
+    },
+    {
+      "status": "??",
+      "path": "plan/2026-05-22-02-gemini-model-switch-plan.md"
+    },
+    {
+      "status": "??",
+      "path": "plan/2026-05-22-03-e2e-lesson-globalrule-plan.md"
+    },
+    {
+      "status": "??",
+      "path": "plan/2026-05-25-01-bun-hono-webui-plan.md"
+    },
+    {
+      "status": "??",
+      "path": "plan/2026-05-25-02-temporal-query-endpoint-plan.md"
+    },
+    {
+      "status": "??",
+      "path": "plan/2026-05-25-03-approve-signal-endpoint-plan.md"
+    },
+    {
+      "status": "??",
+      "path": "plan/2026-05-25-04-dashboard-html-plan.md"
+    },
+    {
+      "status": "??",
+      "path": "plan/2026-05-26-01-dashboard-js-plan.md"
+    },
+    {
+      "status": "??",
+      "path": "plan/2026-05-26-02-webui-e2e-test-plan.md"
+    },
+    {
+      "status": "??",
+      "path": "plan/2026-05-26-03-workflow-list-api-plan.md"
+    },
+    {
+      "status": "??",
+      "path": "plan/2026-05-26-04-hitl-webui-demo-plan.md"
+    },
+    {
+      "status": "??",
+      "path": "result/2026-05-22-01-e2e-grand-demo.md"
+    },
+    {
+      "status": "??",
+      "path": "result/2026-05-25-01-bun-hono-webui.md"
+    },
+    {
+      "status": "??",
+      "path": "result/2026-05-25-02-temporal-query-endpoint.md"
+    },
+    {
+      "status": "??",
+      "path": "result/2026-05-25-03-approve-signal-endpoint.md"
+    },
+    {
+      "status": "??",
+      "path": "result/2026-05-25-04-dashboard-html.md"
+    },
+    {
+      "status": "??",
+      "path": "result/2026-05-26-01-dashboard-js.md"
+    },
+    {
+      "status": "??",
+      "path": "result/2026-05-26-02-webui-e2e-test.md"
+    },
+    {
+      "status": "??",
+      "path": "result/2026-05-26-03-workflow-list-api.md"
+    },
+    {
+      "status": "??",
+      "path": "result/2026-05-26-04-hitl-webui-demo.md"
+    },
+    {
+      "status": "??",
+      "path": "sop_e2e_demo.py"
+    },
+    {
+      "status": "??",
+      "path": "web-ui/"
+    },
+    {
+      "status": "??",
+      "path": "web_ui_e2e_test.py"
+    }
+  ],
+  "next_action": null,
+  "context_notes": "Recent commits:\n2cd2d98 feat: add GitHub PR activity, approve_pr Signal gate, and integration tests\ncb534e3 feat: add no_prohibited_terms validation rule with TDD\n43a2315 feat: register validate_sop_activity and fix_sop_activity in worker\nb61f305 fix: add retry_policy to _call_validate and record validation pass in history\n923a780 feat: add Phase 4 autonomous correction loop to sop_generation_workflow"
+}

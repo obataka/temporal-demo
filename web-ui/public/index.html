@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SOP Workflow Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 text-gray-800 min-h-screen">
+
+  <header class="bg-white border-b border-gray-200 px-6 py-4 flex items-center gap-3">
+    <span class="text-xl font-semibold tracking-tight">SOP Workflow Dashboard</span>
+    <span class="ml-auto text-xs text-gray-400">Temporal × Hono</span>
+  </header>
+
+  <main class="max-w-3xl mx-auto px-4 py-10 space-y-8">
+
+    <!-- ⓪ ワークフロー一覧 -->
+    <section class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider">ワークフロー一覧</h2>
+        <button id="refreshListBtn" class="text-xs text-indigo-500 hover:text-indigo-700 transition font-medium">
+          ↻ 更新
+        </button>
+      </div>
+      <select
+        id="workflowSelect"
+        class="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition bg-white"
+      >
+        <option value="">— 読み込み中 —</option>
+      </select>
+      <p class="mt-2 text-xs text-gray-400">選択すると自動で状態を取得します</p>
+    </section>
+
+    <!-- ① ワークフローID 入力エリア -->
+    <section class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+      <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">ワークフロー ID</h2>
+      <div class="flex gap-3">
+        <input
+          id="workflowIdInput"
+          type="text"
+          placeholder="例: sop-df8be811"
+          class="flex-1 rounded-lg border border-gray-300 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition"
+        />
+        <button
+          id="fetchStatusBtn"
+          class="px-5 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 active:scale-95 transition"
+        >
+          状態を取得
+        </button>
+      </div>
+    </section>
+
+    <!-- ② 状況表示エリア -->
+    <section class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-4">
+      <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider">現在のステータス</h2>
+
+      <div class="flex items-center gap-3">
+        <span class="text-sm text-gray-500">フェーズ:</span>
+        <span id="statusBadge" class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-600">
+          —
+        </span>
+      </div>
+
+      <div>
+        <p class="text-sm text-gray-500 mb-2">SOP プレビュー</p>
+        <pre
+          id="sopPreview"
+          class="bg-gray-50 border border-gray-200 rounded-lg p-4 text-xs text-gray-700 whitespace-pre-wrap break-words min-h-[120px] font-mono leading-relaxed"
+        >ワークフロー ID を入力して「状態を取得」を押してください。</pre>
+      </div>
+    </section>
+
+    <!-- ③ 承認ボタン -->
+    <section class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+      <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">アクション</h2>
+      <button
+        id="approveBtn"
+        disabled
+        class="w-full py-3 rounded-lg bg-gray-300 text-gray-500 font-semibold text-sm cursor-not-allowed transition shadow-sm"
+      >
+        GitHub PR 作成を承認する
+      </button>
+      <p class="mt-3 text-xs text-gray-400 text-center">承認すると approve_pr シグナルがワークフローへ送信されます</p>
+    </section>
+
+  </main>
+
+  <!-- トースト通知コンテナ -->
+  <div id="toastContainer" class="fixed bottom-6 right-6 flex flex-col gap-2 z-50"></div>
+
+  <script>
+    const workflowIdInput = document.getElementById('workflowIdInput');
+    const fetchStatusBtn  = document.getElementById('fetchStatusBtn');
+    const statusBadge     = document.getElementById('statusBadge');
+    const sopPreview      = document.getElementById('sopPreview');
+    const approveBtn      = document.getElementById('approveBtn');
+    const toastContainer  = document.getElementById('toastContainer');
+    const workflowSelect  = document.getElementById('workflowSelect');
+    const refreshListBtn  = document.getElementById('refreshListBtn');
+
+    let currentWorkflowId = null;
+
+    // --- トースト通知 ---
+    function showToast(message, type = 'success') {
+      const colors = {
+        success: 'bg-green-600 text-white',
+        error:   'bg-red-600 text-white',
+        warning: 'bg-yellow-500 text-white',
+      };
+      const toast = document.createElement('div');
+      toast.className = `px-4 py-3 rounded-xl shadow-lg text-sm font-medium transition-opacity duration-300 ${colors[type] ?? colors.success}`;
+      toast.textContent = message;
+      toastContainer.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+
+    // --- statusBadge の色切替 ---
+    const BADGE_CLASSES = {
+      awaiting: 'bg-yellow-100 text-yellow-700',
+      done:     'bg-green-100 text-green-700',
+      default:  'bg-indigo-100 text-indigo-700',
+    };
+
+    function applyBadgeStyle(phase, status) {
+      const el = statusBadge;
+      el.classList.remove(...Object.values(BADGE_CLASSES).flatMap(c => c.split(' ')));
+      if (status === 'awaiting_pr_approval' || phase === 'awaiting_pr_approval') {
+        el.classList.add(...BADGE_CLASSES.awaiting.split(' '));
+      } else if (phase === 'completed') {
+        el.classList.add(...BADGE_CLASSES.done.split(' '));
+      } else {
+        el.classList.add(...BADGE_CLASSES.default.split(' '));
+      }
+    }
+
+    // --- 承認ボタンの有効/無効切替 ---
+    function setApproveEnabled(enabled) {
+      approveBtn.disabled = !enabled;
+      if (enabled) {
+        approveBtn.className = 'w-full py-3 rounded-lg bg-green-600 text-white font-semibold text-sm hover:bg-green-700 active:scale-95 transition shadow-sm cursor-pointer';
+      } else {
+        approveBtn.className = 'w-full py-3 rounded-lg bg-gray-300 text-gray-500 font-semibold text-sm cursor-not-allowed transition shadow-sm';
+      }
+    }
+
+    // --- 状態を取得 ---
+    async function fetchStatus() {
+      const wfId = workflowIdInput.value.trim();
+      if (!wfId) {
+        showToast('ワークフロー ID を入力してください', 'warning');
+        return;
+      }
+
+      currentWorkflowId = wfId;
+      fetchStatusBtn.disabled = true;
+      fetchStatusBtn.textContent = '取得中…';
+
+      try {
+        const res = await fetch(`/api/status/${encodeURIComponent(wfId)}`);
+        const data = await res.json();
+
+        if (res.status === 404) {
+          showToast('ワークフローが見つかりません', 'error');
+          return;
+        }
+        if (!res.ok) {
+          showToast('サーバーエラーが発生しました', 'error');
+          return;
+        }
+
+        // バッジ更新
+        const label = data.phase_label ?? data.current_phase ?? '—';
+        statusBadge.textContent = label;
+        applyBadgeStyle(data.current_phase, data.status);
+
+        // SOP プレビュー更新
+        sopPreview.textContent = data.current_output
+          ? data.current_output
+          : '（SOP テキストはまだ生成されていません）';
+
+        // 承認ボタン制御
+        setApproveEnabled(data.status === 'awaiting_pr_approval');
+
+      } catch (_) {
+        showToast('ネットワークエラーが発生しました', 'error');
+      } finally {
+        fetchStatusBtn.disabled = false;
+        fetchStatusBtn.textContent = '状態を取得';
+      }
+    }
+
+    // --- 承認送信 ---
+    async function approveWorkflow() {
+      if (!currentWorkflowId) return;
+
+      approveBtn.disabled = true;
+      approveBtn.textContent = '送信中…';
+
+      try {
+        const res = await fetch('/api/approve', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ workflowId: currentWorkflowId }),
+        });
+        const data = await res.json();
+
+        if (res.status === 404) {
+          showToast('ワークフローが見つからないか、すでに完了しています', 'error');
+          setApproveEnabled(true);
+          return;
+        }
+        if (!res.ok) {
+          showToast('承認送信に失敗しました', 'error');
+          setApproveEnabled(true);
+          return;
+        }
+
+        showToast('承認を送信しました', 'success');
+        setApproveEnabled(false);
+        statusBadge.textContent = '承認済み';
+        applyBadgeStyle('completed', null);
+
+      } catch (_) {
+        showToast('ネットワークエラーが発生しました', 'error');
+        setApproveEnabled(true);
+      } finally {
+        approveBtn.textContent = 'GitHub PR 作成を承認する';
+      }
+    }
+
+    // --- ワークフロー一覧 ---
+    const STATUS_BADGE = {
+      RUNNING:          '🟡 実行中',
+      COMPLETED:        '🟢 完了',
+      FAILED:           '🔴 失敗',
+      CANCELLED:        '⚪ キャンセル',
+      TERMINATED:       '⛔ 強制終了',
+      CONTINUED_AS_NEW: '🔄 継続',
+      TIMED_OUT:        '🕐 タイムアウト',
+    };
+
+    async function loadWorkflowList() {
+      workflowSelect.innerHTML = '<option value="">— 読み込み中 —</option>';
+      try {
+        const res  = await fetch('/api/workflows?limit=30');
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error ?? 'error');
+
+        workflowSelect.innerHTML = '<option value="">— ワークフローを選択 —</option>';
+        data.forEach(wf => {
+          const opt   = document.createElement('option');
+          opt.value   = wf.workflowId;
+          const label = STATUS_BADGE[wf.status] ?? wf.status;
+          const date  = wf.startTime
+            ? new Date(wf.startTime).toLocaleString('ja-JP', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })
+            : '';
+          opt.textContent = `${wf.workflowId}  ${label}  ${date}`;
+          workflowSelect.appendChild(opt);
+        });
+      } catch (_) {
+        workflowSelect.innerHTML = '<option value="">— 取得失敗 —</option>';
+        showToast('ワークフロー一覧の取得に失敗しました', 'error');
+      }
+    }
+
+    workflowSelect.addEventListener('change', () => {
+      const id = workflowSelect.value;
+      if (!id) return;
+      workflowIdInput.value = id;
+      fetchStatus();
+    });
+
+    refreshListBtn.addEventListener('click', loadWorkflowList);
+    window.addEventListener('load', loadWorkflowList);
+
+    fetchStatusBtn.addEventListener('click', fetchStatus);
+    approveBtn.addEventListener('click', approveWorkflow);
+  </script>
+
+</body>
+</html>

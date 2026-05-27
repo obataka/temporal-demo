@@ -1,0 +1,11 @@
+{
+  "name": "web-ui",
+  "version": "0.0.1",
+  "scripts": {
+    "start": "bun run src/index.ts"
+  },
+  "dependencies": {
+    "hono": "^4.7.0",
+    "@temporalio/client": "^1.16.2"
+  }
+}
