@@ -16,6 +16,8 @@ Signals:
         非空文字    → フィードバックとして同フェーズを再生成
     approve_pr()
         require_approval=True 時、Phase 5 直前に呼び出して PR 作成を解放する
+    reject_with_feedback(input_data: dict)
+        {"comment": "修正指示"} を受け取り、PR 承認待機を差し戻しとして解除する
 
 Queries:
     get_status() -> dict    current_phase / status / attempt / current_output
@@ -44,6 +46,7 @@ PHASE_LABELS = {
     "review":         "フェーズ3: 最終レビュー",
     "autonomous_fix": "フェーズ4: 自律修正",
     "github_pr":      "フェーズ5: GitHub PR作成",
+    "rejected":       "差し戻し済み",
 }
 
 MAX_FIX_ATTEMPTS = 3
@@ -78,6 +81,9 @@ class sop_generation_workflow:
         # PR 承認ゲート（require_approval=True 時に approve_pr Signal を待つ）
         self._pr_approved: bool = False
 
+        # 差し戻しシグナルで受け取った人間のフィードバックコメント
+        self._human_feedback: str = ""
+
     # ─── Signal Handlers ─────────────────────────────────────────────────────
 
     @workflow.signal
@@ -99,6 +105,18 @@ class sop_generation_workflow:
         """
         self._pr_approved = True
 
+    @workflow.signal
+    def reject_with_feedback(self, input_data: dict) -> None:
+        """
+        人間からの修正指示を受け取り、PR 承認待機を差し戻しとして解除する。
+
+        :param input_data: {"comment": "修正指示テキスト"} 形式の辞書。
+                           辞書以外が渡された場合は文字列に変換して保持する。
+        """
+        self._human_feedback = (
+            input_data.get("comment", "") if isinstance(input_data, dict) else str(input_data)
+        )
+
     # ─── Query Handlers ──────────────────────────────────────────────────────
 
     @workflow.query
@@ -114,6 +132,7 @@ class sop_generation_workflow:
             "validation_result": self._validation_result,
             "pr_url": self._pr_url,
             "pr_approved": self._pr_approved,
+            "human_feedback": self._human_feedback,
         }
 
     @workflow.query
@@ -187,66 +206,106 @@ class sop_generation_workflow:
                     last_feedback = feedback
                     self._attempt_in_phase += 1
 
-        # ── Phase 4: 自律修正ループ ────────────────────────────────────────────
-        self._current_phase = "autonomous_fix"
-        final_sop = self._approved["review"]
+        # ── Phase 4 + Phase 5: 対話型ループバック制御 ─────────────────────────
+        # reject_with_feedback シグナルで差し戻された場合、Phase 4 から再実行する。
+        current_sop = self._approved["review"]
+        while True:
+            # ① human_feedback をキャプチャしてリセット（二重ループ防止）
+            human_feedback = self._human_feedback
+            self._human_feedback = ""
+            self._fix_attempt = 0
+            self._current_phase = "autonomous_fix"
+            final_sop = current_sop
 
-        while self._fix_attempt < MAX_FIX_ATTEMPTS:
-            self._status = "validating"
-            v_result = await self._call_validate(final_sop)
-            self._validation_result = {
-                "passed": v_result.passed,
-                "failures": v_result.failures,
-                "score": v_result.score,
-            }
-
-            if v_result.passed:
-                self._approved["review"] = final_sop
+            # ② 人間フィードバックがある場合は事前 fix パスで LLM へ注入する
+            if human_feedback:
+                workflow.logger.info(
+                    "人間フィードバックを受けて Phase 4 再実行 — フィードバック: %s",
+                    human_feedback,
+                )
+                self._status = "fixing"
+                fix_result = await self._call_fix(final_sop, [], human_feedback)
+                final_sop = fix_result.text
                 self._history.append({
                     "phase": "autonomous_fix",
                     "phase_label": PHASE_LABELS["autonomous_fix"],
                     "attempt": self._fix_attempt,
-                    "failures": [],
-                    "output": final_sop,
-                    "tokens": 0,
-                    "latency_ms": 0,
-                    "approved": True,
+                    "failures": [f"[人間フィードバック] {human_feedback}"],
+                    "output": fix_result.text,
+                    "tokens": fix_result.total_tokens,
+                    "latency_ms": fix_result.latency_ms,
+                    "approved": False,
                 })
-                break
+                self._fix_attempt += 1
 
-            self._status = "fixing"
-            fix_result = await self._call_fix(final_sop, v_result.failures)
-            final_sop = fix_result.text
-            self._history.append({
-                "phase": "autonomous_fix",
-                "phase_label": PHASE_LABELS["autonomous_fix"],
-                "attempt": self._fix_attempt,
-                "failures": v_result.failures,
-                "output": fix_result.text,
-                "tokens": fix_result.total_tokens,
-                "latency_ms": fix_result.latency_ms,
-                "approved": False,
-            })
-            self._fix_attempt += 1
-        else:
-            raise ApplicationError(
-                "自律修正失敗: 最大試行回数超過",
-                non_retryable=True,
-            )
+            # ③ 通常バリデーション＋修正ループ
+            while self._fix_attempt < MAX_FIX_ATTEMPTS:
+                self._status = "validating"
+                v_result = await self._call_validate(final_sop)
+                self._validation_result = {
+                    "passed": v_result.passed,
+                    "failures": v_result.failures,
+                    "score": v_result.score,
+                }
 
-        # ── Phase 5: GitHub PR 作成（github_params が指定された場合のみ）─────────
-        if github_params is not None:
-            self._current_phase = "github_pr"
-            if github_params.require_approval:
-                self._status = "awaiting_pr_approval"
-                await workflow.wait_condition(lambda: self._pr_approved)
-            self._status = "creating_pr"
-            pr_result = await self._call_github_pr(
-                sop_text=final_sop,
-                topic=topic,
-                github_params=github_params,
-            )
-            self._pr_url = pr_result["pr_url"]
+                if v_result.passed:
+                    self._approved["review"] = final_sop
+                    self._history.append({
+                        "phase": "autonomous_fix",
+                        "phase_label": PHASE_LABELS["autonomous_fix"],
+                        "attempt": self._fix_attempt,
+                        "failures": [],
+                        "output": final_sop,
+                        "tokens": 0,
+                        "latency_ms": 0,
+                        "approved": True,
+                    })
+                    break
+
+                self._status = "fixing"
+                fix_result = await self._call_fix(final_sop, v_result.failures)
+                final_sop = fix_result.text
+                self._history.append({
+                    "phase": "autonomous_fix",
+                    "phase_label": PHASE_LABELS["autonomous_fix"],
+                    "attempt": self._fix_attempt,
+                    "failures": v_result.failures,
+                    "output": fix_result.text,
+                    "tokens": fix_result.total_tokens,
+                    "latency_ms": fix_result.latency_ms,
+                    "approved": False,
+                })
+                self._fix_attempt += 1
+            else:
+                raise ApplicationError(
+                    "自律修正失敗: 最大試行回数超過",
+                    non_retryable=True,
+                )
+
+            # ④ 次の外側ループ用に最新 SOP を保持
+            current_sop = final_sop
+
+            # ⑤ Phase 5: GitHub PR 作成
+            if github_params is not None:
+                self._current_phase = "github_pr"
+                if github_params.require_approval:
+                    self._status = "awaiting_pr_approval"
+                    self._pr_approved = False  # 再入時リセット
+                    await workflow.wait_condition(
+                        lambda: self._pr_approved or bool(self._human_feedback)
+                    )
+                    if self._human_feedback:
+                        # 差し戻し → Phase 4 へループバック
+                        continue
+                self._status = "creating_pr"
+                pr_result = await self._call_github_pr(
+                    sop_text=final_sop,
+                    topic=topic,
+                    github_params=github_params,
+                )
+                self._pr_url = pr_result["pr_url"]
+
+            break  # 通常完了でループを抜ける
 
         self._status = "completed"
         self._current_phase = "completed"
@@ -282,17 +341,23 @@ class sop_generation_workflow:
             retry_policy=LLM_RETRY_POLICY,
         )
 
-    async def _call_fix(self, sop_text: str, failures: list[str]) -> LLMResult:
+    async def _call_fix(
+        self,
+        sop_text: str,
+        failures: list[str],
+        human_feedback: str = "",
+    ) -> LLMResult:
         """
         fix_sop_activity を実行して修正済み SOP を返す。
 
         :param sop_text: 修正対象の SOP 全文
         :param failures: validate_sop_activity が返した失敗メッセージのリスト
+        :param human_feedback: 人間からの追加修正指示（省略時は空文字）
         :returns: 修正済み SOP を含む LLMResult
         """
         return await workflow.execute_activity(
             fix_sop_activity,
-            args=[sop_text, failures],
+            args=[sop_text, failures, human_feedback],
             start_to_close_timeout=timedelta(minutes=7),
             retry_policy=LLM_RETRY_POLICY,
         )

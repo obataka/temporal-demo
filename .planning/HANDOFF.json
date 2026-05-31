@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "timestamp": "2026-05-27T01:18:05.010Z",
+  "timestamp": "2026-05-29T01:43:02.419Z",
   "source": "auto-postool",
   "partial": false,
   "phase": null,
@@ -18,6 +18,10 @@
   "uncommitted_files": [
     {
       "status": "M",
+      "path": ".planning/HANDOFF.json"
+    },
+    {
+      "status": "M",
       "path": "LESSON.md"
     },
     {
@@ -26,121 +30,61 @@
     },
     {
       "status": "M",
-      "path": "activities/sop_activity.py"
-    },
-    {
-      "status": "M",
-      "path": "activities/validate_sop_activity.py"
-    },
-    {
-      "status": "M",
-      "path": "docker-compose.yaml"
-    },
-    {
-      "status": "??",
-      "path": ".planning/"
-    },
-    {
-      "status": "??",
-      "path": "evidence/"
-    },
-    {
-      "status": "??",
       "path": "hitl_webui_demo.py"
     },
     {
-      "status": "??",
-      "path": "plan/2026-05-22-01-e2e-grand-demo-plan.md"
+      "status": "M",
+      "path": "tests/test_fix_sop_activity.py"
+    },
+    {
+      "status": "M",
+      "path": "web-ui/public/index.html"
+    },
+    {
+      "status": "M",
+      "path": "web-ui/src/index.ts"
+    },
+    {
+      "status": "M",
+      "path": "workflows/sop_workflow.py"
     },
     {
       "status": "??",
-      "path": "plan/2026-05-22-02-gemini-model-switch-plan.md"
+      "path": "plan/2026-05-27-01-reject-endpoint-plan.md"
     },
     {
       "status": "??",
-      "path": "plan/2026-05-22-03-e2e-lesson-globalrule-plan.md"
+      "path": "plan/2026-05-27-02-reject-ui-plan.md"
     },
     {
       "status": "??",
-      "path": "plan/2026-05-25-01-bun-hono-webui-plan.md"
+      "path": "plan/2026-05-27-03-reject-signal-python-plan.md"
     },
     {
       "status": "??",
-      "path": "plan/2026-05-25-02-temporal-query-endpoint-plan.md"
+      "path": "plan/2026-05-29-01-loopback-control-plan.md"
     },
     {
       "status": "??",
-      "path": "plan/2026-05-25-03-approve-signal-endpoint-plan.md"
+      "path": "result/2026-05-27-01-reject-endpoint.md"
     },
     {
       "status": "??",
-      "path": "plan/2026-05-25-04-dashboard-html-plan.md"
+      "path": "result/2026-05-27-02-reject-ui.md"
     },
     {
       "status": "??",
-      "path": "plan/2026-05-26-01-dashboard-js-plan.md"
+      "path": "result/2026-05-27-03-reject-signal-python.md"
     },
     {
       "status": "??",
-      "path": "plan/2026-05-26-02-webui-e2e-test-plan.md"
+      "path": "result/2026-05-29-01-loopback-control.md"
     },
     {
       "status": "??",
-      "path": "plan/2026-05-26-03-workflow-list-api-plan.md"
-    },
-    {
-      "status": "??",
-      "path": "plan/2026-05-26-04-hitl-webui-demo-plan.md"
-    },
-    {
-      "status": "??",
-      "path": "result/2026-05-22-01-e2e-grand-demo.md"
-    },
-    {
-      "status": "??",
-      "path": "result/2026-05-25-01-bun-hono-webui.md"
-    },
-    {
-      "status": "??",
-      "path": "result/2026-05-25-02-temporal-query-endpoint.md"
-    },
-    {
-      "status": "??",
-      "path": "result/2026-05-25-03-approve-signal-endpoint.md"
-    },
-    {
-      "status": "??",
-      "path": "result/2026-05-25-04-dashboard-html.md"
-    },
-    {
-      "status": "??",
-      "path": "result/2026-05-26-01-dashboard-js.md"
-    },
-    {
-      "status": "??",
-      "path": "result/2026-05-26-02-webui-e2e-test.md"
-    },
-    {
-      "status": "??",
-      "path": "result/2026-05-26-03-workflow-list-api.md"
-    },
-    {
-      "status": "??",
-      "path": "result/2026-05-26-04-hitl-webui-demo.md"
-    },
-    {
-      "status": "??",
-      "path": "sop_e2e_demo.py"
-    },
-    {
-      "status": "??",
-      "path": "web-ui/"
-    },
-    {
-      "status": "??",
-      "path": "web_ui_e2e_test.py"
+      "path": "result/2026-05-29-02-hitl-loopback-demo.md"
     }
   ],
   "next_action": null,
-  "context_notes": "Recent commits:\n2cd2d98 feat: add GitHub PR activity, approve_pr Signal gate, and integration tests\ncb534e3 feat: add no_prohibited_terms validation rule with TDD\n43a2315 feat: register validate_sop_activity and fix_sop_activity in worker\nb61f305 fix: add retry_policy to _call_validate and record validation pass in history\n923a780 feat: add Phase 4 autonomous correction loop to sop_generation_workflow"
+  "context_notes": "Recent commits:\n0bac801 temporalコンテナ実装\n2cd2d98 feat: add GitHub PR activity, approve_pr Signal gate, and integration tests\ncb534e3 feat: add no_prohibited_terms validation rule with TDD\n43a2315 feat: register validate_sop_activity and fix_sop_activity in worker\nb61f305 fix: add retry_policy to _call_validate and record validation pass in history"
 }

@@ -61,7 +61,7 @@ async def test_fix_activity_returns_llm_result():
     assert isinstance(result, LLMResult)
     assert result.text == "修正済み SOP テキスト"
     assert result.total_tokens == 300
-    assert result.model == "gemini-2.5-flash"
+    assert result.model == "gemini-2.5-flash-lite"
     assert result.input_tokens == 100
     assert result.output_tokens == 200
 

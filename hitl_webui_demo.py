@@ -192,18 +192,24 @@ async def _poll_phase4(handle, timeout: float) -> dict:
     raise TimeoutError(f"Phase 4 が {timeout}s 以内に完了しませんでした。")
 
 
-async def _wait_for_human_signal(handle, workflow_id: str) -> None:
+async def _wait_for_human_action(
+    handle,
+    workflow_id: str,
+    round_num: int = 1,
+) -> str:
     """
-    ユーザーがブラウザから approve_pr シグナルを送信するまで待機する。
-    5 秒間隔でポーリングし、ドットのみ出力する（無音待機）。
+    ユーザーがブラウザから approve_pr または reject_with_feedback を送信するまで待機する。
 
     :param handle: Temporal WorkflowHandle
     :param workflow_id: ワークフロー ID（案内メッセージ表示用）
+    :param round_num: ループバック回数（案内メッセージ表示用）
+    :returns: "approved" または "rejected"
     :raises TimeoutError: TIMEOUT_HUMAN 秒以内にシグナルが来なかった場合
     """
+    round_label = f"（ラウンド {round_num}）" if round_num > 1 else ""
     print()
     _rule()
-    print("  [Phase 5 GATE] 人間承認待ち")
+    print(f"  [Phase 5 GATE] 人間承認待ち{round_label}")
     _rule()
     print()
     print(f"  Workflow ID : {workflow_id}")
@@ -212,9 +218,9 @@ async def _wait_for_human_signal(handle, workflow_id: str) -> None:
     print("      http://localhost:3000")
     print()
     print("  ■ ドロップダウンから上記 ID を選択し、")
-    print('  ■「GitHub PR 作成を承認する」ボタンを押してください。')
+    print('  ■「GitHub PR 作成を承認する」または「修正を指示して差し戻す」を選んでください。')
     print()
-    print("  ボタンを押すと自動的に処理が再開されます。")
+    print("  操作すると自動的に処理が再開されます。")
     _rule()
     print("  待機中", end="", flush=True)
 
@@ -223,12 +229,18 @@ async def _wait_for_human_signal(handle, workflow_id: str) -> None:
         await asyncio.sleep(5.0)
         try:
             status = await handle.query("get_status")
-            if status["status"] != "awaiting_pr_approval":
+            current = status["status"]
+            if current != "awaiting_pr_approval":
                 print()
                 ts = datetime.now().strftime("%H:%M:%S")
                 print()
+                # 差し戻し → Phase 4 が再走中
+                if current in ("fixing", "validating", "autonomous_fix"):
+                    _log("SIGNAL", f"✓ reject_with_feedback シグナルを受信しました（{ts}）")
+                    return "rejected"
+                # 承認 → PR 作成フェーズへ
                 _log("SIGNAL", f"✓ approve_pr シグナルを受信しました（{ts}）")
-                return
+                return "approved"
             print(".", end="", flush=True)
         except Exception as exc:
             _log("WARN", f"Query エラー: {exc}")
@@ -299,12 +311,24 @@ async def main() -> None:
     await asyncio.sleep(3.0)
     await _poll_phase4(handle, timeout=TIMEOUT_PHASE4)
 
-    # ── フェーズ B: 人間承認待ち ──────────────────────────────────────────────
-    await _wait_for_human_signal(handle, workflow_id)
+    # ── フェーズ B〜C: 人間承認 / ループバック対話ループ ────────────────────
+    round_num = 0
+    while True:
+        round_num += 1
+        action = await _wait_for_human_action(handle, workflow_id, round_num)
 
-    # ── フェーズ C: GitHub PR 作成 ────────────────────────────────────────────
-    print()
-    _log("Phase 5", "GitHub PR 作成中...")
+        if action == "approved":
+            # ── フェーズ C: GitHub PR 作成 ────────────────────────────────
+            print()
+            _log("Phase 5", "GitHub PR 作成中...")
+            break
+        else:
+            # ── 差し戻し → Phase 4 再実行待ち ────────────────────────────
+            print()
+            _log("LOOP", f"差し戻し受信 → Phase 4 再修正ループ実行中... (ラウンド {round_num})")
+            await _poll_phase4(handle, timeout=TIMEOUT_PHASE4)
+            _log("OK", f"Phase 4 再修正完了 → 再び承認待ち (ラウンド {round_num})")
+
     final = await _poll_until(
         handle,
         expected_statuses=("completed",),

@@ -23,29 +23,38 @@ _SYSTEM_INSTRUCTION = (
 )
 
 
-def _build_prompt(sop_text: str, failures: list[str]) -> str:
+def _build_prompt(sop_text: str, failures: list[str], human_feedback: str = "") -> str:
     """
     SOP テキストと失敗リストから修正依頼プロンプトを構築する。
 
     :param sop_text: 修正対象の SOP 全文
     :param failures: validate_sop_activity が返した失敗メッセージのリスト
+    :param human_feedback: 人間からの追加修正指示（省略時は空文字）
     :returns: Gemini に送信するプロンプト文字列
     """
     failures_str = "\n".join(f"- {f}" for f in failures)
+    human_section = (
+        f"\n\n## 人間からの修正指示\n{human_feedback}" if human_feedback else ""
+    )
     return (
-        f"## 修正が必要な問題点\n{failures_str}\n\n"
+        f"## 修正が必要な問題点\n{failures_str}{human_section}\n\n"
         f"## 修正対象の SOP\n{sop_text}\n\n"
         "---\n上記の問題点を全て解消した改善版 SOP を出力してください。"
     )
 
 
 @activity.defn
-async def fix_sop_activity(sop_text: str, failures: list[str]) -> LLMResult:
+async def fix_sop_activity(
+    sop_text: str,
+    failures: list[str],
+    human_feedback: str = "",
+) -> LLMResult:
     """
     バリデーション失敗項目を修正した SOP を Gemini に生成させる。
 
     :param sop_text: 修正対象の SOP 全文
     :param failures: validate_sop_activity が返した失敗メッセージのリスト
+    :param human_feedback: 人間からの追加修正指示（省略時は空文字）
     :returns: 修正済み SOP を含む LLMResult
     """
     from google import genai
@@ -56,7 +65,7 @@ async def fix_sop_activity(sop_text: str, failures: list[str]) -> LLMResult:
         raise EnvironmentError("GEMINI_API_KEY が設定されていません。")
 
     client = genai.Client(api_key=api_key)
-    contents = _build_prompt(sop_text, failures)
+    contents = _build_prompt(sop_text, failures, human_feedback)
 
     start = time.monotonic()
     response = client.models.generate_content(

@@ -87,6 +87,35 @@ app.post("/api/approve", async (c) => {
   }
 });
 
+app.post("/api/reject", async (c) => {
+  const body = await c.req.json<{ workflowId?: string; feedbackComment?: string }>();
+  const { workflowId, feedbackComment } = body;
+
+  if (!workflowId) {
+    return c.json({ error: "workflowId is required" }, 400);
+  }
+  if (!feedbackComment) {
+    return c.json({ error: "feedbackComment is required" }, 400);
+  }
+
+  try {
+    const client = await getClient();
+    const handle = client.workflow.getHandle(workflowId);
+    await handle.signal("reject_with_feedback", { comment: feedbackComment });
+    return c.json({ success: true });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    const isNotFound =
+      message.toLowerCase().includes("not found") ||
+      (error as { code?: number }).code === 5;
+    if (isNotFound) {
+      return c.json({ error: "Workflow not found or already completed", workflowId }, 404);
+    }
+    console.error("[/api/reject]", message);
+    return c.json({ error: message }, 500);
+  }
+});
+
 app.use("/*", serveStatic({ root: "./public" }));
 
 export default { port: 3000, fetch: app.fetch };
