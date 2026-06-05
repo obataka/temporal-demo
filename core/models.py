@@ -16,6 +16,7 @@ class LLMResult:
     output_tokens: int
     total_tokens: int
     latency_ms: float
+    agent_logs: str = ""  # CrewAI Reviewer の出力ログ（存在しない場合は空文字）
 
 
 @dataclass

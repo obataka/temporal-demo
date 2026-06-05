@@ -35,7 +35,11 @@ from core.retry_policy import LLM_RETRY_POLICY
 with workflow.unsafe.imports_passed_through():
     from activities.sop_activity import generate_sop_phase_activity
     from activities.validate_sop_activity import validate_sop_activity
-    from activities.fix_sop_activity import fix_sop_activity
+    from activities.fix_sop_activity import (
+        fix_sop_with_crew_activity,
+        writer_task_activity,
+        reviewer_task_activity,
+    )
     from activities.github_activity import GitHubActivity
 
 PHASES = ["outline", "draft", "review"]
@@ -83,6 +87,12 @@ class sop_generation_workflow:
 
         # 差し戻しシグナルで受け取った人間のフィードバックコメント
         self._human_feedback: str = ""
+
+        # CrewAI Reviewer の出力ログ（fix_sop_with_crew_activity の各実行分を蓄積）
+        self._agent_logs: list[str] = []
+
+        # 現在アクティブなエージェント名（UI パルス表示用）
+        self._active_agent: str | None = None
 
     # ─── Signal Handlers ─────────────────────────────────────────────────────
 
@@ -133,6 +143,8 @@ class sop_generation_workflow:
             "pr_url": self._pr_url,
             "pr_approved": self._pr_approved,
             "human_feedback": self._human_feedback,
+            "agent_logs": "\n\n---\n\n".join(self._agent_logs) if self._agent_logs else "",
+            "active_agent": self._active_agent,
         }
 
     @workflow.query
@@ -226,6 +238,8 @@ class sop_generation_workflow:
                 self._status = "fixing"
                 fix_result = await self._call_fix(final_sop, [], human_feedback)
                 final_sop = fix_result.text
+                if fix_result.agent_logs:
+                    self._agent_logs.append(fix_result.agent_logs)
                 self._history.append({
                     "phase": "autonomous_fix",
                     "phase_label": PHASE_LABELS["autonomous_fix"],
@@ -265,6 +279,8 @@ class sop_generation_workflow:
                 self._status = "fixing"
                 fix_result = await self._call_fix(final_sop, v_result.failures)
                 final_sop = fix_result.text
+                if fix_result.agent_logs:
+                    self._agent_logs.append(fix_result.agent_logs)
                 self._history.append({
                     "phase": "autonomous_fix",
                     "phase_label": PHASE_LABELS["autonomous_fix"],
@@ -348,18 +364,69 @@ class sop_generation_workflow:
         human_feedback: str = "",
     ) -> LLMResult:
         """
-        fix_sop_activity を実行して修正済み SOP を返す。
+        SOP 修正 Activity を実行して修正済み SOP を返す。
+
+        workflow.patched("split-writer-reviewer") が True の場合は
+        writer_task_activity → reviewer_task_activity の 2 ステップシーケンスを使用する。
+        旧コードで起動済みのワークフローのリプレイは fix_sop_with_crew_activity を使用する。
 
         :param sop_text: 修正対象の SOP 全文
         :param failures: validate_sop_activity が返した失敗メッセージのリスト
         :param human_feedback: 人間からの追加修正指示（省略時は空文字）
         :returns: 修正済み SOP を含む LLMResult
         """
+        if workflow.patched("split-writer-reviewer"):
+            return await self._call_fix_decomposed(sop_text, failures, human_feedback)
         return await workflow.execute_activity(
-            fix_sop_activity,
-            args=[sop_text, failures, human_feedback],
+            fix_sop_with_crew_activity,
+            args=[sop_text, failures, human_feedback, self._fix_attempt],
             start_to_close_timeout=timedelta(minutes=7),
             retry_policy=LLM_RETRY_POLICY,
+        )
+
+    async def _call_fix_decomposed(
+        self,
+        sop_text: str,
+        failures: list[str],
+        human_feedback: str = "",
+    ) -> LLMResult:
+        """
+        Writer → Reviewer の 2 ステップシーケンスで SOP を修正する。
+
+        各 Activity の呼び出し前後で _active_agent を更新し、
+        get_status() Query 経由でフロントエンドにエージェントステータスを中継する。
+        両 Activity の結果を合成して単一の LLMResult を返す。
+
+        :param sop_text: 修正対象の SOP 全文
+        :param failures: validate_sop_activity が返した失敗メッセージのリスト
+        :param human_feedback: 人間からの追加修正指示（省略時は空文字）
+        :returns: Writer の修正済み SOP と Reviewer の監査ログを含む LLMResult
+        """
+        self._active_agent = "Writer"
+        writer_result = await workflow.execute_activity(
+            writer_task_activity,
+            args=[sop_text, failures, human_feedback, self._fix_attempt],
+            start_to_close_timeout=timedelta(minutes=7),
+            retry_policy=LLM_RETRY_POLICY,
+        )
+
+        self._active_agent = "Reviewer"
+        reviewer_result = await workflow.execute_activity(
+            reviewer_task_activity,
+            args=[writer_result.text],
+            start_to_close_timeout=timedelta(minutes=7),
+            retry_policy=LLM_RETRY_POLICY,
+        )
+
+        self._active_agent = None
+        return LLMResult(
+            text=writer_result.text,
+            model=writer_result.model,
+            input_tokens=0,
+            output_tokens=0,
+            total_tokens=writer_result.total_tokens + reviewer_result.total_tokens,
+            latency_ms=writer_result.latency_ms + reviewer_result.latency_ms,
+            agent_logs=reviewer_result.agent_logs,
         )
 
     async def _call_github_pr(

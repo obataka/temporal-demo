@@ -48,7 +48,15 @@ app.get("/api/status/:workflowId", async (c) => {
     const client = await getClient();
     const handle = client.workflow.getHandle(workflowId);
     const status = await handle.query<Record<string, unknown>>("get_status");
-    return c.json(status);
+    // Python ワークフローは snake_case で返す可能性があるため両方チェックし string を保証する
+    // 将来 get_status が agent_logs / agentLogs を返したとき自動的に中継される
+    const agentLogs: string =
+      typeof status["agentLogs"] === "string"
+        ? status["agentLogs"]
+        : typeof status["agent_logs"] === "string"
+        ? status["agent_logs"]
+        : "";
+    return c.json({ ...status, agentLogs });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
     // gRPC NOT_FOUND (status code 5) または message 文字列で判定

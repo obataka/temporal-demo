@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "timestamp": "2026-05-29T01:43:02.419Z",
+  "timestamp": "2026-06-05T03:43:10.909Z",
   "source": "auto-postool",
   "partial": false,
   "phase": null,
@@ -30,7 +30,7 @@
     },
     {
       "status": "M",
-      "path": "hitl_webui_demo.py"
+      "path": "core/models.py"
     },
     {
       "status": "M",
@@ -46,45 +46,117 @@
     },
     {
       "status": "M",
+      "path": "worker.py"
+    },
+    {
+      "status": "M",
       "path": "workflows/sop_workflow.py"
     },
     {
       "status": "??",
-      "path": "plan/2026-05-27-01-reject-endpoint-plan.md"
+      "path": "docs/spike_next_features.md"
     },
     {
       "status": "??",
-      "path": "plan/2026-05-27-02-reject-ui-plan.md"
+      "path": "plan/2026-06-01-01-multi-agent-standup-plan.md"
     },
     {
       "status": "??",
-      "path": "plan/2026-05-27-03-reject-signal-python-plan.md"
+      "path": "plan/2026-06-01-02-fix-sop-crew-foundation-plan.md"
     },
     {
       "status": "??",
-      "path": "plan/2026-05-29-01-loopback-control-plan.md"
+      "path": "plan/2026-06-01-03-hono-agentlogs-plan.md"
     },
     {
       "status": "??",
-      "path": "result/2026-05-27-01-reject-endpoint.md"
+      "path": "plan/2026-06-01-04-crew-activity-test-plan.md"
     },
     {
       "status": "??",
-      "path": "result/2026-05-27-02-reject-ui.md"
+      "path": "plan/2026-06-01-05-workflow-crew-switch-plan.md"
     },
     {
       "status": "??",
-      "path": "result/2026-05-27-03-reject-signal-python.md"
+      "path": "plan/2026-06-02-01-agentlogs-workflow-integration-plan.md"
     },
     {
       "status": "??",
-      "path": "result/2026-05-29-01-loopback-control.md"
+      "path": "plan/2026-06-02-02-agentlogs-frontend-plan.md"
     },
     {
       "status": "??",
-      "path": "result/2026-05-29-02-hitl-loopback-demo.md"
+      "path": "plan/2026-06-02-03-agentlogs-verbose-demo-plan.md"
+    },
+    {
+      "status": "??",
+      "path": "plan/2026-06-02-04-fetchstatus-bugfix-plan.md"
+    },
+    {
+      "status": "??",
+      "path": "plan/2026-06-05-01-temperature-tuning-plan.md"
+    },
+    {
+      "status": "??",
+      "path": "plan/2026-06-05-02-activity-split-plan.md"
+    },
+    {
+      "status": "??",
+      "path": "plan/2026-06-05-03-active-agent-workflow-plan.md"
+    },
+    {
+      "status": "??",
+      "path": "result/2026-06-01-01-multi-agent-standup.md"
+    },
+    {
+      "status": "??",
+      "path": "result/2026-06-01-02-fix-sop-crew-foundation.md"
+    },
+    {
+      "status": "??",
+      "path": "result/2026-06-01-03-hono-agentlogs.md"
+    },
+    {
+      "status": "??",
+      "path": "result/2026-06-01-04-crew-activity-test.md"
+    },
+    {
+      "status": "??",
+      "path": "result/2026-06-01-05-workflow-crew-switch.md"
+    },
+    {
+      "status": "??",
+      "path": "result/2026-06-02-01-e2e-hitl-multiagent-demo.md"
+    },
+    {
+      "status": "??",
+      "path": "result/2026-06-02-02-agentlogs-workflow-integration.md"
+    },
+    {
+      "status": "??",
+      "path": "result/2026-06-02-03-agentlogs-frontend.md"
+    },
+    {
+      "status": "??",
+      "path": "result/2026-06-02-04-agentlogs-realtime-verification.md"
+    },
+    {
+      "status": "??",
+      "path": "result/2026-06-05-01-temperature-tuning.md"
+    },
+    {
+      "status": "??",
+      "path": "result/2026-06-05-02-activity-split.md"
+    },
+    {
+      "status": "??",
+      "path": "result/2026-06-05-03-active-agent-workflow.md"
+    },
+    {
+      "status": "??",
+      "path": "workflows/agent_test.py"
     }
   ],
   "next_action": null,
-  "context_notes": "Recent commits:\n0bac801 temporalコンテナ実装\n2cd2d98 feat: add GitHub PR activity, approve_pr Signal gate, and integration tests\ncb534e3 feat: add no_prohibited_terms validation rule with TDD\n43a2315 feat: register validate_sop_activity and fix_sop_activity in worker\nb61f305 fix: add retry_policy to _call_validate and record validation pass in history"
+  "context_notes": "Recent commits:\n3f22fe2 Temporal + Bun・Hono基盤の実装\n0bac801 temporalコンテナ実装\n2cd2d98 feat: add GitHub PR activity, approve_pr Signal gate, and integration tests\ncb534e3 feat: add no_prohibited_terms validation rule with TDD\n43a2315 feat: register validate_sop_activity and fix_sop_activity in worker"
 }

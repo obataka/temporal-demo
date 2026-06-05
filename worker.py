@@ -23,7 +23,12 @@ from temporalio.worker import Worker
 from activities.llm_activity import call_llm_activity, call_llm_with_context_activity
 from activities.mock_activity import call_mock_llm_activity
 from activities.crew_activity import merge_reviews_activity, run_agent_activity
-from activities.fix_sop_activity import fix_sop_activity
+from activities.fix_sop_activity import (
+    fix_sop_activity,
+    fix_sop_with_crew_activity,
+    writer_task_activity,
+    reviewer_task_activity,
+)
 from activities.github_activity import GitHubActivity
 from activities.sop_activity import generate_sop_phase_activity
 from activities.validate_sop_activity import validate_sop_activity
@@ -74,6 +79,9 @@ async def main() -> None:
             generate_sop_phase_activity,
             validate_sop_activity,
             fix_sop_activity,
+            fix_sop_with_crew_activity,
+            writer_task_activity,
+            reviewer_task_activity,
             run_agent_activity,
             merge_reviews_activity,
             _github_activity.create_pull_request,

@@ -99,6 +99,18 @@
       <p class="mt-3 text-xs text-gray-400 text-center">承認すると approve_pr、差し戻すと reject_with_feedback シグナルが送信されます</p>
     </section>
 
+    <!-- ④ AI エージェント思考ログ -->
+    <section class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider">AI エージェントの思考ログ</h2>
+        <span id="agentLogsBadge" class="hidden text-xs px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-600 font-medium">更新中</span>
+      </div>
+      <div id="agentLogsContainer" class="bg-slate-900 rounded-lg p-4 max-h-60 overflow-y-auto">
+        <p id="agentLogsPlaceholder" class="font-mono text-xs text-slate-500">現在、エージェントの思考ログはありません。</p>
+        <pre id="agentLogsContent" class="hidden font-mono text-xs text-slate-200 whitespace-pre-wrap break-words leading-relaxed"></pre>
+      </div>
+    </section>
+
   </main>
 
   <!-- トースト通知コンテナ -->
@@ -113,10 +125,52 @@
     const rejectBtn       = document.getElementById('rejectBtn');
     const feedbackInput   = document.getElementById('feedbackInput');
     const toastContainer  = document.getElementById('toastContainer');
-    const workflowSelect  = document.getElementById('workflowSelect');
-    const refreshListBtn  = document.getElementById('refreshListBtn');
+    const workflowSelect       = document.getElementById('workflowSelect');
+    const refreshListBtn       = document.getElementById('refreshListBtn');
+    const agentLogsContainer   = document.getElementById('agentLogsContainer');
+    const agentLogsPlaceholder = document.getElementById('agentLogsPlaceholder');
+    const agentLogsContent     = document.getElementById('agentLogsContent');
+    const agentLogsBadge       = document.getElementById('agentLogsBadge');
 
     let currentWorkflowId = null;
+    let pollingTimer      = null;
+
+    // --- agentLogs 表示更新 ---
+    function updateAgentLogs(logs) {
+      if (!logs) {
+        agentLogsPlaceholder.classList.remove('hidden');
+        agentLogsContent.classList.add('hidden');
+        agentLogsContent.textContent = '';
+        return;
+      }
+      // 更新前に末尾付近（50px以内）か判定
+      const isNearBottom =
+        agentLogsContainer.scrollHeight - agentLogsContainer.scrollTop
+        <= agentLogsContainer.clientHeight + 50;
+
+      agentLogsPlaceholder.classList.add('hidden');
+      agentLogsContent.classList.remove('hidden');
+      agentLogsContent.textContent = logs;
+
+      // 末尾付近にいた場合のみ自動スクロール（読み中は位置を維持）
+      if (isNearBottom) {
+        agentLogsContainer.scrollTop = agentLogsContainer.scrollHeight;
+      }
+    }
+
+    // --- ポーリング制御 ---
+    function startPolling() {
+      if (pollingTimer) return;
+      pollingTimer = setInterval(() => {
+        if (currentWorkflowId) fetchStatus(true);
+      }, 5000);
+    }
+
+    function stopPolling() {
+      clearInterval(pollingTimer);
+      pollingTimer = null;
+      agentLogsBadge.classList.add('hidden');
+    }
 
     // --- トースト通知 ---
     function showToast(message, type = 'success') {
@@ -178,10 +232,10 @@
     }
 
     // --- 状態を取得 ---
-    async function fetchStatus() {
+    async function fetchStatus(silent = false) {
       const wfId = workflowIdInput.value.trim();
       if (!wfId) {
-        showToast('ワークフロー ID を入力してください', 'warning');
+        if (!silent) showToast('ワークフロー ID を入力してください', 'warning');
         return;
       }
 
@@ -212,13 +266,24 @@
           ? data.current_output
           : '（SOP テキストはまだ生成されていません）';
 
+        // agentLogs 更新
+        updateAgentLogs(data.agentLogs ?? '');
+
         // 承認・差し戻しボタン制御
         const isAwaiting = data.status === 'awaiting_pr_approval';
         setApproveEnabled(isAwaiting);
         setRejectEnabled(isAwaiting);
 
-      } catch (_) {
-        showToast('ネットワークエラーが発生しました', 'error');
+        // ポーリング制御（完了・失敗時は停止、実行中は継続）
+        if (data.status === 'completed' || data.current_phase === 'completed') {
+          stopPolling();
+        } else {
+          startPolling();
+        }
+
+      } catch (err) {
+        console.warn('[fetchStatus]', err);
+        if (!silent) showToast('ネットワークエラーが発生しました', 'error');
       } finally {
         fetchStatusBtn.disabled = false;
         fetchStatusBtn.textContent = '状態を取得';
@@ -305,6 +370,7 @@
       const id = workflowSelect.value;
       if (!id) return;
       workflowIdInput.value = id;
+      stopPolling();
       fetchStatus();
     });
 
@@ -347,6 +413,7 @@
         setApproveEnabled(false);
         statusBadge.textContent = '差し戻し済み';
         applyBadgeStyle('rejected', null);
+        agentLogsBadge.classList.remove('hidden');
 
       } catch (_) {
         showToast('ネットワークエラーが発生しました', 'error');
