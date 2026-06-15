@@ -1,212 +1,176 @@
-# TemporalとHonoを用いたHITL統合検証リハーサルSOP
+## SOPレビュー結果
+
+SOP草稿を拝見しました。デモ動画本番撮影リハーサルという目的、TemporalとHonoの連携、HITLの要素を盛り込み、全体としてよく構成されていると感じました。しかし、品質保証の観点から、より明確性、完全性、実用性を高めるために、いくつかの改善点があります。
+
+---
 
 ## 1. はじめに
 
-### 1.1. 目的
+### 1.1. SOP の目的
 
-本SOPは、デモ動画本番撮影に先立つリハーサルとして、TemporalとHonoを組み合わせたHuman-in-the-Loop (HITL) 統合検証パイプラインの動作確認手順を定めます。特に、**意図的に不完全な実装（`DataProcessor.process` メソッドが常に `None` を返却し、`DataProcessor.validate` メソッドが常に `False` を返却する）が、HITLパイプライン全体に与える影響を、デモシナリオを通して具体的に確認すること**を目的とします。
+本 SOP は、デモ動画本番撮影リハーサルを円滑かつ効果的に実施し、本番撮影におけるデモ動画の品質を最大化し、技術的なリスクを最小限に抑え、デモの再現性と安定性を確保することを目的とします。
 
-### 1.2. 適用範囲
+### 1.2. 対象読者
 
-本SOPは、デモ動画撮影に先立つリハーサルを目的とし、特定の不備を含む実装がHITLパイプラインに与える影響を検証します。開発・テスト環境における網羅的な単体テストや結合テスト、または本番運用に関する手順は、本SOPの対象外です。
+本 SOP は、デモ動画本番撮影リハーサルに関わる全ての技術担当者、プロジェクトマネージャー、および品質保証担当者を対象としています。
 
-### 1.3. 重要性
+### 1.3. 用語の定義
 
-このリハーサルは、以下の点において重要です。
+*   **Temporal:** 分散システムにおけるワークフローオーケストレーションを可能にするプラットフォーム。
+*   **Hono:** Eclipse Hono™ は、IoT デバイスとバックエンドアプリケーション間のセキュアな双方向通信を可能にするメッセージングプラットフォーム。
+*   **`DataProcessor` クラス:** データ処理ロジックをカプセル化するクラス。本SOPでは、データの初期処理と検証ロジックを担うことを想定しています。
+*   **`run_pipeline` 関数:** データ処理パイプラインの実行を制御する関数。`DataProcessor` クラスのメソッドを呼び出し、処理フローを管理します。
+*   **HITL (Human-in-the-Loop):** データ処理や意思決定の一部に人間が関与するシナリオを指します。本 SOP では、人間による介入が必要な状態をログ出力によって確認するシナリオを想定しています。
 
-*   **HITL要素の検証:** 人間による判断や承認が必要なステップが、ワークフロー内で適切にトリガーされ、その結果がシステムに反映されるか（例: TemporalのSignalやUpsertWorkflowExecutionを利用した承認プロセス、データ修正、エラーハンドリングなど）を確認します。
-*   **不完全な実装の影響確認:** ソースコードは意図的に不完全な部分を含んでおり、その予期せぬ挙動を意図的に確認します。**このリハーサルでは、`DataProcessor.process` メソッドが常に `None` を返却し、`DataProcessor.validate` メソッドが常に `False` を返却する、という意図的な不備がある実装を対象とします。これにより、これらの不備が HITL パイプライン全体に与える影響を、デモシナリオを通して具体的に確認することを目的とします。**
-*   **デモの再現性確保:** デモ動画撮影時の予期せぬトラブルを未然に防ぎ、安定したデモンストレーションを可能にします。
+---
 
-## 2. 用語定義
+## 2. リハーサル概要
 
-*   **Temporal:** 分散型ワークフローオーケストレーションエンジン。信頼性の高いワークフロー実行を保証します。
-*   **Hono:** 軽量で高速なWebフレームワーク。本SOPでは、HITLのためのWeb UIおよびAPIを提供します。
-*   **HITL (Human-in-the-Loop):** 人間の判断や介入をシステムプロセスに組み込むこと。承認プロセス、データ入力、エラー対応など、人間が判断を下し、その結果をシステムにフィードバックするプロセスを指します。
-*   **アクティビティ:** Temporalワークフロー内で実行されるビジネスロジックの単位。HonoのAPIエンドポイントやPythonの`DataProcessor`クラスの`process`メソッドなどが、具体的なアクティビティとして実装され、Temporalによってオーケストレーションされます。
-*   **ワークフロー:** Temporalにおける一連のアクティビティの実行ロジック。本SOPでは、データ処理からHITLステップを含む一連のプロセスを指します。
+### 2.1. リハーサルの目的
 
-## 3. リハーサル準備
+デモ動画本番撮影に向けた技術的な準備とオペレーションの習熟を目的とします。具体的には、Temporal Clusterの操作、Honoへのデータ送信、ログ監視ツールの操作、およびデモ動画撮影時の進行管理の習熟を目指します。
 
-### 3.1. 必要な機材・ソフトウェアの確認
+### 2.2. リハーサルシナリオ
 
-以下の機材・ソフトウェアが準備され、正しく動作することを確認してください。
+本リハーサルでは、以下のシナリオを通じて、システム連携と異常系の挙動を確認します。
 
-*   **PC:** macOS, Linux, または Windows (WSL2推奨)
-*   **Docker / Docker Compose:** バージョン20.10以上
-    *   `docker --version`
-    *   `docker compose version`
-*   **Git:** バージョン2.25以上
-    *   `git --version`
-*   **Python:** バージョン3.9以上
-    *   `python3 --version`
-    *   `pip3 --version`
-*   **Node.js / npm または Bun:**
-    *   `node --version` (または `bun --version`)
-    *   `npm --version` (または `bun --version`)
-*   **Temporal Cloud (またはローカルTemporal Cluster):**
-    *   Temporal Cloudを使用する場合: Namespace, Host, API Keyが設定済みであること。環境変数での管理を推奨します（例: `TEMPORAL_NAMESPACE`, `TEMPORAL_HOST_URL`, `TEMPORAL_CLIENT_CERT`, `TEMPORAL_CLIENT_KEY`）。
-*   **Honoアプリケーション:**
-    *   プロジェクトディレクトリで `npm install` または `bun install` を実行し、依存関係がインストールされていることを確認します。
-    *   Honoサーバーが起動できるかどうかの確認手順（例: `bun run dev` または `npm start` を実行し、ブラウザで `http://localhost:3000` にアクセスして正常に応答することを確認します）。
+1.  **データ初期処理の試行:**
+    `DataProcessor` クラスの `process` メソッドを呼び出し、データの初期処理を試みます。デモ動画では、外部データソースからのデータ取得や前処理を想定していますが、この段階では、`process` メソッドは常に `None` を返します。
+2.  **データ検証の試行:**
+    `validate` メソッドが呼び出されますが、デモ動画ではデータ形式の検証やビジネスロジックのチェックを想定しています。しかし、これは現時点では未実装であり、常に `False` を返します。
+3.  **HITL 介入（想定）:**
+    データ処理または検証が失敗した場合、本来はここで人間による介入や意思決定を促すフローとなりますが、リハーサルでは人間が介入すべき状態であることを示すための『トリガーログ』の出力を確認します。
+4.  **Hono へのデータ送信:**
+    最終的に、処理された（または処理が失敗した）データに関する情報を Hono を介して送信します。
 
-### 3.2. 環境構築
+---
 
-1.  **リポジトリのクローン:**
+## 3. システム構成と前提条件
+
+### 3.1. システム構成図
+
+本リハーサルでは、以下の2つの実行環境を想定します。
+
+*   **ローカル実行環境:**
+    *   目的: コアロジックの単体テストおよび初期動作確認。
+    *   `DataProcessor` クラスは、直接Pythonスクリプトから呼び出されます。
+*   **デモ動画シナリオ（本番環境模擬）:**
+    *   目的: TemporalとHonoを含むコンポーネント連携の確認。
+    *   `DataProcessor` クラスは、Temporal Activityとして実行されます。
+
+### 3.2. 事前準備
+
+1.  **Python 環境:** Python 3.9 以降がインストールされていること。
+2.  **必要な Python ライブラリ:**
+    必要な Python ライブラリ (例: `temporalio`, `hono-client` など) は、`requirements.txt` に記載されており、`pip install -r requirements.txt` でインストールします。
     ```bash
-    git clone https://github.com/your-org/temporal-hono-hitl-demo.git # 例: リポジトリURLを指定
-    cd temporal-hono-hitl-demo
-    ls -F # 確認例: クローンされたファイルやディレクトリが表示されることを確認
-    ```
-2.  **Temporal Cloudの設定 (Cloudを使用する場合):**
-    環境変数にTemporal Cloudの接続情報を設定します。
-    ```bash
-    export TEMPORAL_NAMESPACE="your-namespace" # 例: your-namespace
-    export TEMPORAL_HOST_URL="your-host-url.tmprl.cloud:7233" # 例: your-host-url.tmprl.cloud:7233
-    export TEMPORAL_CLIENT_CERT="/path/to/your/client.pem" # 例: /Users/user/certs/client.pem
-    export TEMPORAL_CLIENT_KEY="/path/to/your/client.key" # 例: /Users/user/certs/client.key
-    echo "Temporal Namespace: $TEMPORAL_NAMESPACE" # 確認例: 設定した値が表示されることを確認
-    temporal operator cluster health # 確認例: Temporal CLIが正しく設定され、クラスタに接続できることを確認
-    ```
-    または、Temporal CLIを設定します。
-    ```bash
-    temporal config set-context my-cloud-context --namespace your-namespace --address your-host-url.tmprl.cloud:7233 --tls-cert-path /path/to/your/client.pem --tls-key-path /path/to/your/client.key
-    temporal config use-context my-cloud-context
-    temporal config get-context # 確認例: 設定したコンテキストが表示されることを確認
-    ```
-3.  **ローカル Temporal Cluster の構築 (ローカル環境を使用する場合):**
-    リポジトリに含まれる `docker-compose.yml` を使用してTemporal Clusterを起動します。
-    ```bash
-    docker compose up -d
-    docker ps # 確認例: temporal-frontend, temporal-worker, temporal-history, temporal-matching, postgres, adminerなどのコンテナが起動していることを確認
-    temporal system health # 確認例: Temporal Clusterが正常であることを確認
-    ```
-4.  **Hono 環境構築:**
-    Honoアプリケーションのディレクトリに移動し、依存関係をインストールします。
-    ```bash
-    cd hono-app # 例: hono-appディレクトリに移動
-    bun install # または npm install
-    # 確認例: node_modulesディレクトリが作成され、依存関係がインストールされたことを確認
-    bun run dev # または npm start
-    # 確認例: コンソールに "Hono server listening on http://localhost:3000" のようなメッセージが表示されることを確認。
-    # ブラウザで http://localhost:3000 にアクセスし、Hono UIが正常に表示されるか確認。
-    ```
-5.  **Python 環境構築:**
-    Pythonアプリケーションのディレクトリに移動し、依存関係をインストールします。
-    ```bash
-    cd python-worker # 例: python-workerディレクトリに移動
-    python3 -m venv .venv # 仮想環境の作成 (推奨)
-    source .venv/bin/activate # 仮想環境の有効化
+    # プロジェクトの依存関係をインストール
     pip install -r requirements.txt
-    # 確認例: pip list コマンドで必要なライブラリ (temporalio, pydanticなど) がインストールされていることを確認
-    # 仮想環境を終了するには `deactivate` コマンドを使用します。
     ```
+3.  **Temporal Cluster:** ローカルまたはテスト環境に Temporal Cluster が稼働していること。
+4.  **Hono インスタンス:** Hono のモックサーバーまたは実際の Hono インスタンスのいずれかを使用します。リハーサルでは、Hono クライアントが正常に接続できることを確認できる環境であればどちらでも構いません。
 
-## 4. リハーサル手順
+---
 
-本セクションでは、HITL統合検証パイプラインのリハーサル手順を説明します。
+## 4. リハーサル実施手順
 
-1.  **Temporal Workerの起動:**
-    Pythonアプリケーションディレクトリで、Temporal Workerを起動します。
-    ```bash
-    cd python-worker # 例: python-workerディレクトリに移動
-    source .venv/bin/activate # 仮想環境を有効化 (もし作成した場合)
-    python3 worker.py # 例: worker.pyがエントリーポイントの場合
-    # 確認例: コンソールに "Worker started" のようなメッセージが表示され、エラーなく動作していることを確認
-    ```
+### 4.1. 準備
 
-2.  **Honoサーバーの起動:**
-    Honoアプリケーションディレクトリで、Honoサーバーが起動していることを確認します。
-    ```bash
-    cd hono-app # 例: hono-appディレクトリに移動
-    bun run dev # または npm start
-    # 確認例: ブラウザで http://localhost:3000 にアクセスし、UIが表示されることを確認
-    ```
+#### 4.1.1. リポジトリのクローン
 
-3.  **ワークフローの開始:**
-    別のターミナルで、Temporalクライアントを使用してワークフローを開始します。
-    ```bash
-    cd python-client # 例: ワークフローをトリガーするクライアントスクリプトがあるディレクトリ
-    source .venv/bin/activate # 仮想環境を有効化 (もし作成した場合)
-    python3 client.py start_workflow --data "sample_data_input" # 例: クライアントスクリプトと引数
-    # 確認例: ワークフローID (Workflow ID) が出力されることを確認
-    ```
+プロジェクトリポジトリをローカル環境にクローンします。
 
-4.  **Temporal UI/CLIでのワークフロー監視:**
-    Temporal UI (通常 `http://localhost:8080` または Temporal Cloud UI) にアクセスし、開始したワークフローのステータスを監視します。
-    *   ワークフローが `DataProcessor.process` アクティビティで失敗し、`None` を返却する、または `DataProcessor.validate` アクティビティで失敗し、`False` を返却する挙動を確認します。
-    *   ワークフローがHITLステップ（例: `WaitForHumanApproval` アクティビティ）で一時停止していることを確認します。
+```bash
+# プロジェクトリポジトリをクローン
+git clone https://github.com/your-org/your-repo.git
+cd your-repo
+```
 
-5.  **Hono UIからのHITL操作:**
-    Hono UI (`http://localhost:3000`) にアクセスし、ワークフローIDに対応するHITLタスクを探します。
-    *   意図的に不完全なデータが表示されていることを確認します。
-    *   データ修正や承認の操作を行います。例えば、「承認」ボタンをクリックするか、データを修正して「送信」ボタンをクリックします。
-    *   **注意:** 本SOPの目的上、`DataProcessor` の不備により、Hono UIから承認/修正を行っても、ワークフローは最終的に失敗する可能性があります。この挙動を観察することが重要です。
+#### 4.1.2. 依存関係のインストール
 
-6.  **ワークフロー結果の確認:**
-    Temporal UI/CLIに戻り、ワークフローの最終的なステータスを確認します。
-    *   `DataProcessor` の意図的な不備により、ワークフローが最終的に失敗する（例: `WorkflowFailed` ステータス）ことを確認します。
-    *   イベント履歴を確認し、Hono UIからのSignalがTemporalによって受信され、その後のワークフローロジックがどのように進行したか（そして失敗したか）を分析します。
+プロジェクトルートで `pip install -r requirements.txt` を実行し、必要なライブラリをインストールします。
+
+```bash
+# プロジェクトの依存関係をインストール
+pip install -r requirements.txt
+```
+
+#### 4.1.3. ログ出力設定の確認
+
+コード例で `logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')` とありますが、これは `main.py` の冒頭など、スクリプトのエントリポイントで設定されていることを確認します。これにより、DEBUG レベル以上のログが出力されるようになります。
+
+### 4.2. シナリオ実行
+
+#### 4.2.1. `run_pipeline` 関数の実行
+
+`run_pipeline` 関数は、実際には Temporal Activity として Temporal Cluster 上で実行されることを想定していますが、このローカル実行は、Temporal Clusterへのデプロイ前のコアロジックの単体テストおよび初期動作確認として位置づけられます。以下のコマンドで実行します。
+
+```bash
+# ローカルでパイプラインを実行
+python main.py
+```
+
+**確認ポイント:**
+*   `DataProcessor.process` メソッドが `None` を返すことを確認し、それによって `run_pipeline` 関数内の `if result is None:` ブロックが実行され、`logger.warning` がトリガーされてログに出力されることを確認します。
+
+#### 4.2.2. `DataProcessor.process` メソッドの動作確認
+
+現状は未実装（`None` を返す）ですが、本来、このメソッドは外部データソースからのデータ取得や前処理（例: データの整形、フィルタリングなど）を行うことを想定しています。ログに `WARNING:root:Data processing returned None. Human intervention might be required.` の警告が出力されていることを確認します。
+
+#### 4.2.3. `DataProcessor.validate` メソッドの動作確認（現状未実装）
+
+このメソッドは、現状のコードでは `return False` のみであり、実際の検証ロジックは実装されていません。ローカル実行のステップでは `validate` メソッドは直接呼び出されません。これは、Temporal Activity として実行される場合にのみ呼び出されることを想定しています。本来、このメソッドはデータ形式の検証やビジネスロジックのチェック（例: 必須フィールドの存在確認、値の範囲チェックなど）を行うことを想定しています。
+
+**議論ポイント:**
+*   「もし実装されていれば、この後にどのような処理が期待されるか」を関係者間で議論します。
+
+### 4.3. 異常系シナリオの確認
+
+#### 4.3.1. 不正な入力データに対する `run_pipeline` の挙動確認（`logger.warning` の出力）
+
+`DataProcessor.process` が `None` を返すことで、`run_pipeline` 関数内の `if result is None:` ブロックが実行されることを確認します。これにより、データ処理が失敗した際の警告ログが適切に出力されることを確認します。
+
+#### 4.3.2. （将来的な実装を想定）`validate` メソッドが `False` を返した場合の処理フローの確認
+
+`validate` メソッドが `False` を返すシナリオは、現在のローカル実行では直接再現されませんが、Temporal Activity として実行された場合に `False` が返された際の処理フロー（例: HITL介入のトリガー、エラー通知など）について議論します。特に、HITL介入が必要な状態を示すログ（例: `WARNING:root:Validation failed, human intervention required.`）が出力されることを想定し、そのログメッセージと出力タイミングについて確認します。
+
+---
 
 ## 5. トラブルシューティング
 
-リハーサル中に発生しうる一般的な問題と、その解決手順を以下に示します。
+### 5.1. Temporal Cluster 接続エラー
 
-### 5.1. Temporal Cluster/Cloud 接続エラー
-
-*   **エラーコード/メッセージ例:**
-    *   `gRPC connection failed`
-    *   `Unable to connect to Temporal service`
-    *   `TEMPORAL_HOST_URL` or `TEMPORAL_NAMESPACE` not found
-    *   `x509: certificate signed by unknown authority` (TLS/証明書関連)
+*   **エラーメッセージ例:** `temporalio.client.errors.ServiceError: Connection refused`
+*   **原因:** Temporal Cluster または Worker が起動していない、または接続設定が誤っている。
 *   **解決手順:**
-    1.  **環境変数の確認:** `TEMPORAL_HOST_URL`, `TEMPORAL_NAMESPACE`, `TEMPORAL_CLIENT_CERT`, `TEMPORAL_CLIENT_KEY` の各環境変数が正しく設定されているか、スペルミスがないかを確認してください。`echo $TEMPORAL_HOST_URL` などで確認できます。
-    2.  **Temporal Cloudの場合:**
-        *   APIキーの有効期限が切れていないか確認してください。
-        *   ネットワーク接続が安定しているか確認してください。
-        *   指定されたホストURLが正しいか確認してください。
-    3.  **ローカルTemporal Clusterの場合:**
-        *   `docker compose ps` コマンドで、Temporal関連の全てのコンテナ（`temporal-frontend`, `temporal-worker`, `temporal-history`, `temporal-matching`など）が `Up` ステータスで起動していることを確認してください。
-        *   `docker compose logs` コマンドで、各コンテナのログを確認し、起動時のエラーがないか確認してください。
-        *   `temporal system health` コマンドを実行し、クラスタの状態が正常であることを確認してください。
-    4.  **TLS/証明書エラーの場合:**
-        *   `TEMPORAL_CLIENT_CERT` と `TEMPORAL_CLIENT_KEY` で指定された証明書と秘密鍵のパスが正しいか、ファイルが存在するか確認してください。
-        *   証明書が有効であるか、またTemporal Cloud側で正しく登録されているか確認してください。
+    1.  Temporal Cluster が起動しているか確認します (`docker-compose ps` など)。
+    2.  Temporal Worker が起動しているか確認します。
+    3.  `TEMPORAL_GRPC_ENDPOINT` 環境変数が正しく設定されているか確認します。
 
-### 5.2. Hono サーバー起動失敗
+### 5.2. Hono API 呼び出しエラー
 
-*   **エラーコード/メッセージ例:**
-    *   `Address already in use` (ポート3000が使用中)
-    *   `Error: Cannot find module '...'` (依存関係の不足)
-    *   `SyntaxError: Unexpected token '...'` (コードの構文エラー)
+*   **エラーメッセージ例:** `hono_client.exceptions.HonoAPIError: 404 Not Found` または `requests.exceptions.ConnectionError`
+*   **原因:** Hono インスタンスが起動していない、API エンドポイントが誤っている、または認証情報が不足している。
 *   **解決手順:**
-    1.  **依存関係の確認:** Honoアプリケーションディレクトリで `bun install` または `npm install` が正常に完了しているか確認してください。`node_modules` ディレクトリが存在し、必要なパッケージがインストールされていることを確認してください。
-    2.  **ポートの競合:** ポート3000が他のプロセスによって使用されていないか確認してください。
-        *   macOS/Linux: `lsof -i :3000`
-        *   Windows: `netstat -ano | findstr :3000`
-        他のプロセスが使用している場合は、そのプロセスを終了するか、Honoアプリケーションのポート設定を変更してください。
-    3.  **ログの確認:** `bun run dev` または `npm start` を実行したターミナルの出力ログを確認し、具体的なエラーメッセージを特定してください。
+    1.  Hono モックサーバーまたは実際の Hono インスタンスが起動しているか確認します。
+    2.  Hono のエンドポイントURLが正しく設定されているか確認します。
+    3.  APIキーや認証情報が必要な場合は、正しく設定されているか確認します。
 
-### 5.3. Python Worker 起動失敗 / ワークフローが開始されない
+### 5.3. `DataProcessor.process` が常に `None` を返す
 
-*   **エラーコード/メッセージ例:**
-    *   `ModuleNotFoundError: No module named 'temporalio'` (Temporal SDKがインストールされていない)
-    *   `temporalio.exceptions.WorkflowFailureError` (ワークフロー実行中のエラー)
-    *   `Activity execution failed` (アクティビティ実行中のエラー)
+*   **エラーメッセージ例:** `WARNING:root:Data processing returned None. Human intervention might be required.`
+*   **原因:** 現在のリハーサルシナリオにおける想定された挙動です。
 *   **解決手順:**
-    1.  **依存関係の確認:** Pythonアプリケーションディレクトリで `pip install -r requirements.txt` が正常に完了しているか確認してください。`pip list` コマンドで `temporalio` やその他の必要なライブラリがインストールされていることを確認してください。
-    2.  **仮想環境の有効化:** 仮想環境を使用している場合、`source .venv/bin/activate` で正しく有効化されているか確認してください。
-    3.  **Workerログの確認:** Python Workerを起動しているターミナルでエラーログを確認し、具体的なエラーメッセージを特定してください。
-    4.  **Temporal UI/CLIでの確認:** Temporal UIまたは `temporal workflow list` コマンドで、ワークフローがそもそも開始されているか、またはどのアクティビティで失敗しているかを確認してください。
-    5.  **環境変数の確認:** Python WorkerプロセスにTemporal Cloudの接続情報（`TEMPORAL_NAMESPACE`, `TEMPORAL_HOST_URL`など）が正しく渡されているか確認してください。
+    1.  この警告ログが意図通りに出力されていることを確認します。
+    2.  本番環境では、`process` メソッドの実装を見直し、適切なデータ処理が行われるように修正します。
 
-### 5.4. HITLステップでのワークフロー停止 / `DataProcessor` 関連のエラー
+### 5.4. ログが出力されない
 
-*   **エラーコード/メッセージ例:**
-    *   ワークフローが特定のActivity（例: `WaitForHumanApproval`, `ProcessDataActivity`, `ValidateDataActivity`）で長時間停止している。
-    *   Temporal UIのイベント履歴に `DataProcessor.process` が `None` を返却した、または `DataProcessor.validate` が `False` を返却した旨のメッセージが表示される。
-    *   `Workflow failed: Data validation failed` のようなメッセージが表示される。
+*   **エラーメッセージ例:** (ログ自体が出力されないためなし)
+*   **原因:** ログ設定が正しく行われていない。
 *   **解決手順:**
-    1.  **これは本SOPの目的である「意図的な不備」による挙動です。** ワークフローが `DataProcessor.process` または `DataProcessor.validate` アクティビティで失敗した場合、またはHITLステップで一時停止した後に期待通りに進まない場合、それはこのリハーサルの目的である「不完全な実装の影響確認」の範疇です。
-    2.  **Hono UIからのSignal送信確認:** Hono UIでデータ修正や承認のSignalが正しく送信されているか確認してください。送信後、Temporal UIでワークフローのイベント履歴を確認し、Signalが受信されているか、その後の処理がどのように進んでいるかを確認してください。
-    3.  **想定外の挙動の場合:** もし、この挙動が想定外であり、本来はワークフローが成功すべきである場合は、`DataProcessor` の実装を確認し、`process` メソッドが適切な値を返し、`validate` メソッドが正しい条件で `True` を返すように修正してください。
+    1.  `logging.basicConfig` がスクリプトのエントリポイントで正しく設定されているか確認します。
+    2.  `level=logging.DEBUG` が設定されているか確認します。
+    3.  ログファイルへの出力設定をしている場合、ファイルパスが正しいか、書き込み権限があるか確認します。
+
+---
