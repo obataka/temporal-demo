@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SOP Intelligence Platform — 形骸化した社内手順書が、今日もチームを腐らせている。</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    html { scroll-behavior: smooth; }
+    .phase-line::before {
+      content: '';
+      position: absolute;
+      left: 1.25rem;
+      top: 2.75rem;
+      bottom: -1rem;
+      width: 2px;
+      background: linear-gradient(to bottom, #a5b4fc, #e0e7ff);
+    }
+  </style>
+</head>
+<body class="font-sans antialiased text-gray-900">
+
+  <!-- ===== HEADER ===== -->
+  <header class="sticky top-0 z-50 bg-slate-900/95 backdrop-blur border-b border-slate-700/50">
+    <div class="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <div class="w-7 h-7 rounded-md bg-emerald-500 flex items-center justify-center">
+          <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <span class="text-white font-semibold text-sm tracking-wide">SOP Intelligence Platform</span>
+      </div>
+      <a href="#cta"
+         class="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-semibold rounded-lg transition-colors duration-150 shadow-lg shadow-emerald-900/30">
+        無償 PoC 枠を確認する
+      </a>
+    </div>
+  </header>
+
+  <!-- ===== HERO ===== -->
+  <section id="hero" class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 flex items-center">
+    <div class="max-w-6xl mx-auto px-6 py-24 w-full">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+
+        <!-- Left: Copy -->
+        <div class="space-y-8">
+          <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold tracking-wider uppercase">
+            先行 PoC 枠 5 社限定 受付中
+          </div>
+          <h1 class="text-4xl lg:text-5xl font-black leading-tight text-white">
+            形骸化した社内手順書が、<br>
+            <span class="text-emerald-400">今日もチームを腐らせている。</span>
+          </h1>
+          <h2 class="text-lg lg:text-xl text-emerald-300 font-medium leading-relaxed">
+            Temporal × マルチエージェント AI が、<br>
+            SOP の生成・審査・承認・統合を<br>
+            <span class="font-bold">完全自律で完走させます。</span>
+          </h2>
+          <p class="text-slate-300 leading-relaxed text-base">
+            標準作業手順書（SOP）の形骸化は「担当者の怠慢」ではありません。<br>
+            更新コストが高すぎる、という構造的な問題です。私たちはその構造を壊します。
+          </p>
+          <div class="flex flex-col sm:flex-row gap-4 pt-2">
+            <a href="#cta"
+               class="px-8 py-4 bg-emerald-500 hover:bg-emerald-400 text-white font-bold rounded-xl text-center transition-all duration-150 shadow-xl shadow-emerald-900/40 hover:shadow-emerald-900/60 hover:-translate-y-0.5">
+              → 無償 PoC 枠を確認する（限定 5 社）
+            </a>
+            <button type="button" onclick="openVideoModal()"
+               class="px-8 py-4 bg-transparent hover:bg-slate-700/50 border border-slate-500 text-slate-300 hover:text-white font-semibold rounded-xl text-center transition-all duration-150">
+              まずデモ動画を見る（2 分 3 秒）
+            </button>
+          </div>
+        </div>
+
+        <!-- Right: Video Trigger -->
+        <div class="relative">
+          <button type="button" onclick="openVideoModal()" aria-label="SOP_Platform_Labs デモ動画を再生（2分3秒）"
+            class="w-full aspect-video bg-slate-800/80 border border-slate-600/50 rounded-2xl overflow-hidden shadow-2xl shadow-black/50 flex items-center justify-center group cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900">
+            <div class="absolute inset-0 bg-gradient-to-br from-indigo-900/20 to-slate-900/40"></div>
+            <!-- Play button -->
+            <div class="relative z-10 flex flex-col items-center gap-4">
+              <div class="w-20 h-20 rounded-full bg-emerald-500/20 border-2 border-emerald-400/60 flex items-center justify-center group-hover:bg-emerald-500/30 group-hover:border-emerald-400 transition-all duration-200">
+                <svg class="w-8 h-8 text-emerald-400 ml-1" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M8 5v14l11-7z"/>
+                </svg>
+              </div>
+              <div class="text-center">
+                <p class="text-slate-300 font-medium text-sm">デモ動画</p>
+                <p class="text-slate-500 text-xs mt-0.5">Writer ⇄ Reviewer エージェントのリアルタイム議論</p>
+              </div>
+            </div>
+            <!-- Corner labels -->
+            <div class="absolute top-4 left-4 flex gap-2">
+              <span class="px-2 py-1 bg-emerald-500/20 text-emerald-400 text-xs rounded font-mono">LIVE</span>
+              <span class="px-2 py-1 bg-indigo-500/20 text-indigo-300 text-xs rounded font-mono">2:03</span>
+            </div>
+          </button>
+          <!-- Decorative glow -->
+          <div class="absolute -inset-1 bg-gradient-to-r from-emerald-500/10 to-indigo-500/10 rounded-2xl blur-xl -z-10"></div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== PROBLEM ===== -->
+  <section id="problem" class="bg-gray-50 py-24">
+    <div class="max-w-6xl mx-auto px-6">
+
+      <!-- Section header -->
+      <div class="text-center mb-16">
+        <p class="text-indigo-600 font-semibold text-sm uppercase tracking-widest mb-3">なぜ、手順書は化石化するのか</p>
+        <h2 class="text-3xl lg:text-4xl font-black text-slate-900 leading-tight">
+          あなたの組織だけの問題ではない。<br>
+          手順書の形骸化には、<span class="text-indigo-700">構造的な原因</span>がある。
+        </h2>
+      </div>
+
+      <!-- 4 Cause Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-16">
+
+        <div class="bg-white border border-gray-200 rounded-2xl p-8 shadow-sm hover:shadow-md transition-shadow duration-200">
+          <div class="flex items-start gap-5">
+            <div class="flex-shrink-0 w-10 h-10 rounded-full bg-indigo-100 text-indigo-700 font-black text-lg flex items-center justify-center">1</div>
+            <div>
+              <h3 class="font-bold text-slate-900 text-lg mb-2">更新コストの非対称性</h3>
+              <p class="text-slate-600 text-sm leading-relaxed">手順書を書く工数は膨大だが、書かなくても短期的には誰も困らない。</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white border border-gray-200 rounded-2xl p-8 shadow-sm hover:shadow-md transition-shadow duration-200">
+          <div class="flex items-start gap-5">
+            <div class="flex-shrink-0 w-10 h-10 rounded-full bg-indigo-100 text-indigo-700 font-black text-lg flex items-center justify-center">2</div>
+            <div>
+              <h3 class="font-bold text-slate-900 text-lg mb-2">オーナーシップの曖昧さ</h3>
+              <p class="text-slate-600 text-sm leading-relaxed">「誰が更新すべきか」が不文律になっており、結果として誰も動かない。</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white border border-gray-200 rounded-2xl p-8 shadow-sm hover:shadow-md transition-shadow duration-200">
+          <div class="flex items-start gap-5">
+            <div class="flex-shrink-0 w-10 h-10 rounded-full bg-indigo-100 text-indigo-700 font-black text-lg flex items-center justify-center">3</div>
+            <div>
+              <h3 class="font-bold text-slate-900 text-lg mb-2">変化速度との乖離</h3>
+              <p class="text-slate-600 text-sm leading-relaxed">システム・法令・体制の変化スピードに、手作業での更新が追いつかない。</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white border border-gray-200 rounded-2xl p-8 shadow-sm hover:shadow-md transition-shadow duration-200">
+          <div class="flex items-start gap-5">
+            <div class="flex-shrink-0 w-10 h-10 rounded-full bg-indigo-100 text-indigo-700 font-black text-lg flex items-center justify-center">4</div>
+            <div>
+              <h3 class="font-bold text-slate-900 text-lg mb-2">読まれない手順書の連鎖</h3>
+              <p class="text-slate-600 text-sm leading-relaxed">古いという不信から誰も参照せず、さらに更新の優先度が下がる悪循環。</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 3 Risk Blocks -->
+      <div class="mb-6">
+        <h3 class="text-center text-xl font-black text-slate-800 mb-8">形骸化した手順書が引き起こす 3 つの組織リスク</h3>
+        <div class="space-y-4">
+
+          <div class="bg-amber-50 border-l-4 border-amber-500 rounded-r-2xl p-6">
+            <div class="flex items-start gap-4">
+              <span class="text-2xl flex-shrink-0">⚠️</span>
+              <div>
+                <h4 class="font-bold text-amber-900 text-base mb-1">監査リスク</h4>
+                <p class="text-amber-800 text-sm leading-relaxed">SOP 不備はコンプライアンス審査の最頻出指摘事項です。1 件の指摘が、開発チームへの信頼を失墜させます。</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-amber-50 border-l-4 border-amber-500 rounded-r-2xl p-6">
+            <div class="flex items-start gap-4">
+              <span class="text-2xl flex-shrink-0">⚠️</span>
+              <div>
+                <h4 class="font-bold text-amber-900 text-base mb-1">ガバナンスリスク</h4>
+                <p class="text-amber-800 text-sm leading-relaxed">「誰が、何を、いつ判断したか」が記録されない組織は、インシデント発生時に説明責任を果たせません。</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-amber-50 border-l-4 border-amber-500 rounded-r-2xl p-6">
+            <div class="flex items-start gap-4">
+              <span class="text-2xl flex-shrink-0">⚠️</span>
+              <div>
+                <h4 class="font-bold text-amber-900 text-base mb-1">業務品質リスク</h4>
+                <p class="text-amber-800 text-sm leading-relaxed">現場担当者が古い手順を踏む → ミス → 手戻り → 信頼コスト。この連鎖は、SOP が最新である限り発生しません。</p>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ===== SOLUTION ===== -->
+  <section id="solution" class="bg-white py-24">
+    <div class="max-w-5xl mx-auto px-6">
+
+      <!-- Section header -->
+      <div class="text-center mb-16">
+        <p class="text-indigo-600 font-semibold text-sm uppercase tracking-widest mb-3">5 フェーズの完全自律ガバナンス</p>
+        <h2 class="text-3xl lg:text-4xl font-black text-slate-900 leading-tight mb-4">
+          AI が、SOP 改善の<span class="text-indigo-700">全工程を自律で完走する。</span>
+        </h2>
+        <h3 class="text-lg text-slate-500 font-medium leading-relaxed max-w-2xl mx-auto">
+          人間は「差し戻す」か「承認する」かを判断するだけ。<br>
+          その間に、AI が議論し、修正し、記録します。
+        </h3>
+      </div>
+
+      <!-- 5 Phase Timeline -->
+      <div class="space-y-0">
+
+        <!-- Phase 1 -->
+        <div class="relative flex gap-8 pb-12 phase-line">
+          <div class="flex-shrink-0 w-10 h-10 rounded-full bg-indigo-600 text-white font-black text-sm flex items-center justify-center shadow-lg shadow-indigo-200 z-10">1</div>
+          <div class="pb-4">
+            <div class="flex items-center gap-3 mb-2">
+              <h4 class="font-bold text-slate-900 text-lg">章立て提案 <span class="text-slate-400 font-mono text-sm ml-1">Outline</span></h4>
+            </div>
+            <p class="text-slate-600 text-sm leading-relaxed">AI が SOP の全体構成を提案します。人間はその骨子を承認するか、フィードバックを送るだけです。</p>
+          </div>
+        </div>
+
+        <!-- Phase 2 -->
+        <div class="relative flex gap-8 pb-12 phase-line">
+          <div class="flex-shrink-0 w-10 h-10 rounded-full bg-indigo-600 text-white font-black text-sm flex items-center justify-center shadow-lg shadow-indigo-200 z-10">2</div>
+          <div class="pb-4">
+            <div class="flex items-center gap-3 mb-2">
+              <h4 class="font-bold text-slate-900 text-lg">詳細執筆 <span class="text-slate-400 font-mono text-sm ml-1">Draft</span></h4>
+            </div>
+            <p class="text-slate-600 text-sm leading-relaxed">承認された構成に沿って、AI が本文を執筆します。専門用語・手順の具体性・コンプライアンス要件を自動的に考慮します。</p>
+          </div>
+        </div>
+
+        <!-- Phase 3 -->
+        <div class="relative flex gap-8 pb-12 phase-line">
+          <div class="flex-shrink-0 w-10 h-10 rounded-full bg-indigo-600 text-white font-black text-sm flex items-center justify-center shadow-lg shadow-indigo-200 z-10">3</div>
+          <div class="pb-4">
+            <div class="flex items-center gap-3 mb-2">
+              <h4 class="font-bold text-slate-900 text-lg">最終レビュー <span class="text-slate-400 font-mono text-sm ml-1">Review</span></h4>
+            </div>
+            <p class="text-slate-600 text-sm leading-relaxed">AI が自らの出力を批評し、品質を確認します。誤記・抜け漏れ・表現の曖昧さを自動検出します。</p>
+          </div>
+        </div>
+
+        <!-- Phase 4 -->
+        <div class="relative flex gap-8 pb-12 phase-line">
+          <div class="flex-shrink-0 w-10 h-10 rounded-full bg-emerald-600 text-white font-black text-sm flex items-center justify-center shadow-lg shadow-emerald-200 z-10">4</div>
+          <div class="pb-4">
+            <div class="flex items-center gap-3 mb-3">
+              <h4 class="font-bold text-slate-900 text-lg">Writer ⇄ Reviewer 自律修正ループ <span class="text-slate-400 font-mono text-sm ml-1">Autonomous Fix</span></h4>
+            </div>
+            <p class="text-slate-600 text-sm leading-relaxed mb-3">Writer エージェントと Reviewer エージェントが相互に議論し、最良の表現に収束するまで自律的に繰り返します。このプロセス全体が、リアルタイムで可視化されます。</p>
+            <div class="flex gap-3">
+              <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 border border-emerald-200 rounded-lg text-xs font-semibold text-emerald-700">
+                <span class="w-2 h-2 rounded-full bg-emerald-500"></span> Writer
+              </span>
+              <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 border border-amber-200 rounded-lg text-xs font-semibold text-amber-700">
+                <span class="w-2 h-2 rounded-full bg-amber-500"></span> Reviewer
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Phase 5 (no line after last) -->
+        <div class="relative flex gap-8">
+          <div class="flex-shrink-0 w-10 h-10 rounded-full bg-indigo-600 text-white font-black text-sm flex items-center justify-center shadow-lg shadow-indigo-200 z-10">5</div>
+          <div>
+            <div class="flex items-center gap-3 mb-2">
+              <h4 class="font-bold text-slate-900 text-lg">PR 自動生成・組織統合 <span class="text-slate-400 font-mono text-sm ml-1">GitHub Integration</span></h4>
+            </div>
+            <p class="text-slate-600 text-sm leading-relaxed">承認後、変更内容がバージョン管理システムに自動統合されます。SOP の変更履歴が、コードと同じ厳密さで追跡・管理されます。</p>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Inline CTA -->
+      <div class="mt-14 text-center">
+        <button type="button" onclick="openVideoModal()"
+           class="inline-flex items-center gap-2 px-8 py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl transition-all duration-150 shadow-lg shadow-indigo-200 hover:-translate-y-0.5">
+          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+          実際に動作している画面を見る（デモ動画：2分3秒）
+        </button>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ===== TRUST ===== -->
+  <section id="trust" class="bg-slate-800 py-24">
+    <div class="max-w-6xl mx-auto px-6">
+
+      <!-- Section header -->
+      <div class="text-center mb-16">
+        <p class="text-emerald-400 font-semibold text-sm uppercase tracking-widest mb-4">なぜ Temporal なのか</p>
+        <h2 class="text-3xl lg:text-5xl font-black text-white leading-tight">
+          サーバーが落ちても、<br>
+          <span class="text-emerald-400">業務プロセスは 1 ミリもバグらない。</span>
+        </h2>
+      </div>
+
+      <!-- Core message -->
+      <div class="bg-slate-700/50 border-l-4 border-emerald-400 rounded-r-2xl p-8 mb-16 max-w-3xl mx-auto">
+        <p class="text-slate-200 leading-relaxed text-base">
+          Temporal は、ワークフローの全ステップを永続化するオーケストレーションエンジンです。<br>
+          AI が Phase 3 まで進んだ状態でサーバーが障害を起こしても、<br>
+          復旧後に Phase 3 の正しい地点から再開します。<strong class="text-white">途中経過のロストはゼロです。</strong>
+        </p>
+      </div>
+
+      <!-- 4 Pillars -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
+
+        <div class="bg-slate-700 rounded-2xl p-8 border border-slate-600/50 hover:border-emerald-500/30 transition-colors duration-200">
+          <div class="text-3xl mb-4">🔒</div>
+          <h3 class="font-bold text-white text-lg mb-3">耐障害性</h3>
+          <p class="text-slate-300 text-sm leading-relaxed">ネットワーク断・サーバー停止・コンテナクラッシュ——いかなる障害にも、ワークフローは必ず正しい位置から再開します。</p>
+        </div>
+
+        <div class="bg-slate-700 rounded-2xl p-8 border border-slate-600/50 hover:border-emerald-500/30 transition-colors duration-200">
+          <div class="text-3xl mb-4">📋</div>
+          <h3 class="font-bold text-white text-lg mb-3">完全監査ログ</h3>
+          <p class="text-slate-300 text-sm leading-relaxed">誰が、いつ、何を承認・差し戻ししたか。すべてのアクションが、改ざんできない履歴として自動記録されます。</p>
+        </div>
+
+        <div class="bg-slate-700 rounded-2xl p-8 border border-slate-600/50 hover:border-emerald-500/30 transition-colors duration-200">
+          <div class="text-3xl mb-4">🔄</div>
+          <h3 class="font-bold text-white text-lg mb-3">冪等な再試行</h3>
+          <p class="text-slate-300 text-sm leading-relaxed">AI の呼び出しが失敗した場合、Temporal が自動でリトライします。同じ処理が二重に実行されないことを、エンジンレベルで保証します。</p>
+        </div>
+
+        <div class="bg-slate-700 rounded-2xl p-8 border border-slate-600/50 hover:border-emerald-500/30 transition-colors duration-200">
+          <div class="text-3xl mb-4">📊</div>
+          <h3 class="font-bold text-white text-lg mb-3">リアルタイム可視化</h3>
+          <p class="text-slate-300 text-sm leading-relaxed">ワークフローの現在フェーズ・エージェントの稼働状態・ログが、Web UI でリアルタイムに確認できます。ブラックボックスにしません。</p>
+        </div>
+
+      </div>
+
+      <!-- Track record -->
+      <p class="text-center text-slate-400 text-sm">
+        「本番環境に導入できるか」という問いへの答えは、Temporal のトラックレコード（Uber / Netflix / Airbnb 等）が証明しています。
+      </p>
+
+    </div>
+  </section>
+
+  <!-- ===== TRUE VALUE ===== -->
+  <section id="true-value" class="bg-gray-50 py-24">
+    <div class="max-w-5xl mx-auto px-6">
+
+      <!-- Section header -->
+      <div class="text-center mb-16">
+        <p class="text-emerald-600 font-semibold text-sm uppercase tracking-widest mb-3">Why Temporal × Multi-Agent AI</p>
+        <h2 class="text-3xl lg:text-4xl font-black text-slate-900 leading-tight mb-4">
+          単なる手順書の <span class="text-emerald-600">Markdown 化ツール</span> ではない。
+        </h2>
+        <p class="text-slate-500 text-base leading-relaxed max-w-2xl mx-auto">
+          以下の 3 ステップが完全に連動して初めて成立する、唯一無二の自律ガバナンス基盤です。
+        </p>
+      </div>
+
+      <!-- 3 Value Cards -->
+      <div class="space-y-6 mb-12">
+
+        <!-- Card 1: 自律監査ループ -->
+        <div class="bg-white border border-gray-200 rounded-2xl p-8 shadow-sm border-l-4 border-l-emerald-500 hover:shadow-md transition-shadow duration-200">
+          <div class="flex items-start gap-6">
+            <div class="flex-shrink-0 w-12 h-12 rounded-full bg-emerald-100 text-emerald-700 font-black text-lg flex items-center justify-center shadow-sm">1</div>
+            <div>
+              <div class="flex items-center gap-3 mb-3">
+                <h3 class="font-bold text-slate-900 text-xl">自律監査ループ</h3>
+                <span class="px-2.5 py-1 bg-emerald-100 text-emerald-700 text-xs font-semibold rounded-full">Writer ⇄ Reviewer</span>
+              </div>
+              <p class="text-slate-600 text-sm leading-relaxed">
+                インプットされた手順書に対し、<strong class="text-slate-800">専門の AI エージェント（Writer / Reviewer）が約 7 分間</strong>、
+                セキュリティ・例外処理の観点から手順書のバグを炙り出す厳格な議論を<strong class="text-slate-800">完全自律で実行</strong>します。
+                この相互レビューの全過程が、リアルタイムで Web UI に可視化されます。
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 2: HITL -->
+        <div class="bg-white border border-gray-200 rounded-2xl p-8 shadow-sm border-l-4 border-l-amber-500 hover:shadow-md transition-shadow duration-200">
+          <div class="flex items-start gap-6">
+            <div class="flex-shrink-0 w-12 h-12 rounded-full bg-amber-100 text-amber-700 font-black text-lg flex items-center justify-center shadow-sm">2</div>
+            <div>
+              <div class="flex items-center gap-3 mb-3">
+                <h3 class="font-bold text-slate-900 text-xl">人間介入（HITL）</h3>
+                <span class="px-2.5 py-1 bg-amber-100 text-amber-700 text-xs font-semibold rounded-full">Human-in-the-Loop</span>
+              </div>
+              <p class="text-slate-600 text-sm leading-relaxed">
+                監査中のエージェントに対し、<strong class="text-slate-800">人間が UI からいつでもリアルタイムに追記・修正指示を投入</strong>できます。
+                指示を受けたエージェントは即座に再バリデーション（再点灯）を行い、人間の意図を反映した形で議論を再開します。
+                「AI 任せ」にしながら、重要な判断軸は人間が握り続ける設計です。
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 3: インフラ連動（自動PR） -->
+        <div class="bg-white border border-gray-200 rounded-2xl p-8 shadow-sm border-l-4 border-l-indigo-500 hover:shadow-md transition-shadow duration-200">
+          <div class="flex items-start gap-6">
+            <div class="flex-shrink-0 w-12 h-12 rounded-full bg-indigo-100 text-indigo-700 font-black text-lg flex items-center justify-center shadow-sm">3</div>
+            <div>
+              <div class="flex items-center gap-3 mb-3">
+                <h3 class="font-bold text-slate-900 text-xl">インフラ連動（自動 PR）</h3>
+                <span class="px-2.5 py-1 bg-indigo-100 text-indigo-700 text-xs font-semibold rounded-full">GitHub Integration</span>
+              </div>
+              <p class="text-slate-600 text-sm leading-relaxed">
+                人間が「承認（Complete）」ボタンを押した瞬間、<strong class="text-slate-800">Temporal と連動して修正済みの本物のコード（GitHub Pull Request）を自動生成</strong>します。
+                手動でのコード編集・コピペは不要。監査・承認・インフラ更新が 1 つのワークフローとして完結します。
+              </p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Closing statement -->
+      <div class="bg-slate-800 rounded-2xl p-8 text-center">
+        <p class="text-slate-200 text-base leading-relaxed">
+          この 3 ステップが連動して初めて、<strong class="text-white">「手順書の形骸化」という構造問題を根本から解決</strong>できます。<br>
+          単体機能ではなく、ガバナンス基盤として設計されているのが、このシステムの本質です。
+        </p>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ===== CTA ===== -->
+  <section id="cta" class="bg-indigo-950 py-24">
+    <div class="max-w-4xl mx-auto px-6">
+
+      <!-- Offer header -->
+      <div class="text-center mb-14">
+        <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-sm font-bold mb-6">
+          限定 5 社 — 無償 PoC 受付中
+        </div>
+        <h2 class="text-3xl lg:text-4xl font-black text-white leading-tight">
+          先行 無償 PoC 枠 — 5 社限定<br>
+          <span class="text-emerald-400">4 週間・週 2 時間、コアチームが直接伴走します。</span>
+        </h2>
+        <p class="text-slate-400 mt-4 text-sm leading-relaxed max-w-xl mx-auto">
+          製品化に向けた実績構築のため、SOP Platform Labs のコア開発メンバーが直接導入に伴走する無償 PoC を、限定 5 社に提供しています。<br>
+          費用は一切かかりません。PoC 期間は 4 週間、週 2 時間の非同期サポートを含みます。
+        </p>
+      </div>
+
+      <!-- Offer content -->
+      <div class="bg-indigo-900/50 border border-indigo-700/50 rounded-2xl p-8 mb-10">
+
+        <!-- Eligibility -->
+        <h3 class="text-white font-bold text-base mb-5">対象企業</h3>
+        <ul class="space-y-3 mb-8">
+          <li class="flex items-start gap-3 text-slate-300 text-sm">
+            <span class="text-emerald-400 font-bold flex-shrink-0 mt-0.5">✅</span>
+            <span>SOP・標準手順書の更新コストや形骸化にお悩みの組織</span>
+          </li>
+          <li class="flex items-start gap-3 text-slate-300 text-sm">
+            <span class="text-emerald-400 font-bold flex-shrink-0 mt-0.5">✅</span>
+            <span>AI × ワークフロー自動化を PoC レベルで検証したい開発・情シス部門</span>
+          </li>
+          <li class="flex items-start gap-3 text-slate-300 text-sm">
+            <span class="text-emerald-400 font-bold flex-shrink-0 mt-0.5">✅</span>
+            <span>意思決定に関われる役職（開発責任者・PM・技術顧問等）の方</span>
+          </li>
+        </ul>
+
+        <!-- PoC content -->
+        <h3 class="text-white font-bold text-base mb-5">無償 PoC に含まれるもの</h3>
+        <ul class="space-y-2 mb-8">
+          <li class="flex items-start gap-3 text-slate-300 text-sm">
+            <span class="text-indigo-400 flex-shrink-0 mt-0.5">・</span>
+            <span>御社の手順書管理課題のヒアリングと、このシステムで解決できること・できないことの率直な説明</span>
+          </li>
+          <li class="flex items-start gap-3 text-slate-300 text-sm">
+            <span class="text-indigo-400 flex-shrink-0 mt-0.5">・</span>
+            <span>SOP Intelligence Platform の環境セットアップと初期導入サポート（4 週間）</span>
+          </li>
+          <li class="flex items-start gap-3 text-slate-300 text-sm">
+            <span class="text-indigo-400 flex-shrink-0 mt-0.5">・</span>
+            <span>週 2 時間を上限とした、コア開発メンバーによる非同期サポート</span>
+          </li>
+          <li class="flex items-start gap-3 text-slate-300 text-sm">
+            <span class="text-indigo-400 flex-shrink-0 mt-0.5">・</span>
+            <span><strong class="text-slate-200">お客様のプライベート環境（Docker ベース）</strong>へデプロイして検証を実施します。機密データが外部サーバーへ流出するリスクはゼロです。</span>
+          </li>
+          <li class="flex items-start gap-3 text-slate-300 text-sm">
+            <span class="text-indigo-400 flex-shrink-0 mt-0.5">・</span>
+            <span>現在運用中の手順書（<strong class="text-slate-200">Excel / Word / PDF 等</strong>）をメッセージで送るだけで、検証用データへのコンバートからエージェント監査のキックまで、当方が完全リモートで代行します。</span>
+          </li>
+        </ul>
+
+        <!-- Support policy -->
+        <div class="bg-slate-800/60 border border-slate-600/40 rounded-xl p-5 mb-6">
+          <h4 class="text-slate-200 font-semibold text-sm mb-2">📨 サポート体制について</h4>
+          <p class="text-slate-400 text-sm leading-relaxed">
+            サポートおよびお問い合わせは、<strong class="text-slate-200">Slack 等のテキストコミュニケーション限定</strong>で実施します。<br>
+            非同期での対応により、確実な記録と双方の生産性を最大化します。音声・ビデオ通話には対応しておりません。
+          </p>
+        </div>
+
+        <!-- Honest note -->
+        <p class="text-slate-400 text-sm leading-relaxed border-t border-indigo-700/50 pt-6">
+          「まだ検討段階」でも構いません。<br>話を聞いてから判断していただければ十分です。
+        </p>
+
+      </div>
+
+      <!-- Contact Form -->
+      <form id="contact-form" class="bg-white rounded-2xl p-8 shadow-2xl shadow-black/30">
+        <h3 class="text-slate-900 font-bold text-lg mb-6">無償 PoC への申し込み・お問い合わせ</h3>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-5">
+          <div>
+            <label for="name" class="block text-slate-700 text-sm font-semibold mb-1.5">お名前 <span class="text-red-500">*</span></label>
+            <input
+              type="text" id="name" name="name" required
+              placeholder="山田 太郎"
+              class="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition"
+            />
+          </div>
+          <div>
+            <label for="company" class="block text-slate-700 text-sm font-semibold mb-1.5">会社名 <span class="text-red-500">*</span></label>
+            <input
+              type="text" id="company" name="company" required
+              placeholder="株式会社〇〇"
+              class="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition"
+            />
+          </div>
+        </div>
+
+        <div class="mb-5">
+          <label for="email" class="block text-slate-700 text-sm font-semibold mb-1.5">メールアドレス <span class="text-red-500">*</span></label>
+          <input
+            type="email" id="email" name="email" required
+            placeholder="taro.yamada@example.com"
+            class="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition"
+          />
+        </div>
+
+        <div class="mb-6">
+          <label for="message" class="block text-slate-700 text-sm font-semibold mb-1.5">課題の概要・ご質問（任意）</label>
+          <textarea
+            id="message" name="message" rows="4"
+            placeholder="現在どのような課題をお持ちか、簡単にお聞かせください。（例：手順書が古くて誰も読まない、更新の担当者が曖昧…）"
+            class="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition resize-none"
+          ></textarea>
+        </div>
+
+        <div class="mb-6">
+          <label class="flex items-start gap-3 cursor-pointer group">
+            <div class="flex-shrink-0 mt-0.5">
+              <input type="checkbox" id="sop-attachment" name="sop_attachment"
+                class="w-4 h-4 rounded border-gray-300 text-emerald-500 focus:ring-emerald-400 accent-emerald-500" />
+            </div>
+            <div>
+              <span class="block text-slate-700 text-sm font-semibold">手順書データの Markdown 化代行を希望する</span>
+              <span class="block text-slate-400 text-xs mt-0.5">Excel / Word / PDF 等をお持ちの場合、Markdown 変換からエージェント監査のキックまで代行します（任意）</span>
+            </div>
+          </label>
+        </div>
+
+        <div id="form-error" class="hidden mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm"></div>
+
+        <button
+          id="submit-btn"
+          type="submit"
+          class="w-full py-4 bg-emerald-500 hover:bg-emerald-400 text-white font-bold rounded-xl text-base transition-all duration-150 shadow-lg shadow-emerald-200 hover:-translate-y-0.5 disabled:opacity-60 disabled:cursor-not-allowed">
+          → 無償 PoC 枠に申し込む（限定 5 社）
+        </button>
+
+        <p class="mt-4 text-slate-400 text-xs text-center">
+          ※ 先着 5 社に達し次第、受付を一時停止します。<br>
+          PoC 期間中のサポートはテキストコミュニケーション（Slack 等）限定です。
+        </p>
+      </form>
+
+    </div>
+  </section>
+
+  <!-- ===== FOOTER ===== -->
+  <footer class="bg-slate-950 border-t border-slate-800 py-8">
+    <div class="max-w-6xl mx-auto px-6 text-center">
+      <p class="text-slate-500 text-sm">Copyright © 2026 SOP Platform Labs. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <!-- ===== CONTACT SUCCESS MODAL ===== -->
+  <div id="contact-success-modal"
+       class="fixed inset-0 z-[110] hidden items-center justify-center bg-slate-950/90 backdrop-blur-sm px-4 sm:px-6"
+       role="dialog" aria-modal="true" aria-labelledby="contact-success-title">
+    <div class="relative w-full max-w-lg mx-auto bg-slate-800 border border-slate-700/60 rounded-2xl p-8 shadow-2xl shadow-black/60 text-center">
+      <!-- Icon -->
+      <div class="mx-auto mb-5 w-14 h-14 rounded-full bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center">
+        <svg class="w-7 h-7 text-emerald-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+        </svg>
+      </div>
+      <h3 id="contact-success-title" class="text-white font-bold text-xl mb-4">お問い合わせを受け付けました</h3>
+      <p class="text-slate-300 text-sm leading-relaxed mb-6">
+        2営業日以内に、SOP Platform Labs 担当より折り返しご連絡いたします。<br>
+        手順書データの Markdown 化代行をご希望の場合は、追ってご案内するセキュアな共有リンクをお待ちください。
+      </p>
+      <button type="button" onclick="closeContactSuccessModal()"
+        class="px-8 py-3 bg-emerald-500 hover:bg-emerald-400 text-white font-semibold rounded-xl transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400">
+        閉じる
+      </button>
+    </div>
+  </div>
+
+  <!-- ===== VIDEO MODAL ===== -->
+  <div id="video-modal"
+       class="fixed inset-0 z-[100] hidden items-center justify-center bg-slate-950/90 backdrop-blur-sm px-4 sm:px-6 transition-opacity duration-200"
+       role="dialog" aria-modal="true" aria-label="SOP_Platform_Labs デモ動画"
+       onclick="closeVideoModal()">
+    <div class="relative w-full max-w-5xl mx-auto" onclick="event.stopPropagation()">
+      <!-- Close button -->
+      <button type="button" onclick="closeVideoModal()" aria-label="動画を閉じる"
+        class="absolute -top-11 right-0 sm:-right-1 flex items-center gap-1.5 text-slate-300 hover:text-white text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 rounded">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+        閉じる
+      </button>
+      <!-- 16:9 responsive video frame -->
+      <div class="aspect-video w-full rounded-xl overflow-hidden border border-slate-700/60 shadow-2xl shadow-black/60 bg-black">
+        <video id="demo-video"
+          class="w-full h-full object-contain bg-black"
+          src="/videos/SOP_Platform_Demo_Final.mp4"
+          muted controls playsinline preload="none"
+          aria-label="SOP_Platform_Labs デモ動画（2分3秒）"></video>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      // ── Video modal ──────────────────────────────────────────────────────────
+      const modal = document.getElementById('video-modal');
+      const video = document.getElementById('demo-video');
+
+      window.openVideoModal = function () {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        document.body.classList.add('overflow-hidden');
+        const playPromise = video.play();
+        if (playPromise && typeof playPromise.catch === 'function') {
+          playPromise.catch(function () { /* autoplay抑止時はユーザー操作で再生 */ });
+        }
+      };
+
+      window.closeVideoModal = function () {
+        video.pause();
+        video.currentTime = 0;
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        document.body.classList.remove('overflow-hidden');
+      };
+
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
+          window.closeVideoModal();
+        }
+      });
+
+      // ── Contact success modal ────────────────────────────────────────────────
+      const successModal = document.getElementById('contact-success-modal');
+
+      window.openContactSuccessModal = function () {
+        successModal.classList.remove('hidden');
+        successModal.classList.add('flex');
+        document.body.classList.add('overflow-hidden');
+      };
+
+      window.closeContactSuccessModal = function () {
+        successModal.classList.add('hidden');
+        successModal.classList.remove('flex');
+        document.body.classList.remove('overflow-hidden');
+      };
+
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && !successModal.classList.contains('hidden')) {
+          window.closeContactSuccessModal();
+        }
+      });
+
+      // ── Contact form submit ──────────────────────────────────────────────────
+      const form = document.getElementById('contact-form');
+      const submitBtn = document.getElementById('submit-btn');
+      const formError = document.getElementById('form-error');
+
+      function showFormError(msg) {
+        formError.textContent = msg;
+        formError.classList.remove('hidden');
+      }
+
+      function hideFormError() {
+        formError.classList.add('hidden');
+        formError.textContent = '';
+      }
+
+      form.addEventListener('submit', async function (e) {
+        e.preventDefault();
+        hideFormError();
+
+        const name    = form.querySelector('#name').value.trim();
+        const company = form.querySelector('#company').value.trim();
+        const email   = form.querySelector('#email').value.trim();
+        const message = form.querySelector('#message').value.trim();
+        const sopAttachment = form.querySelector('#sop-attachment').checked;
+
+        submitBtn.disabled = true;
+        submitBtn.textContent = '送信中...';
+
+        try {
+          const res = await fetch('/api/contact', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, company, email, message, sop_attachment: sopAttachment }),
+          });
+
+          if (res.ok) {
+            form.reset();
+            openContactSuccessModal();
+          } else {
+            let errMsg = '送信に失敗しました。時間をおいて再度お試しください。';
+            try {
+              const data = await res.json();
+              if (data.error && typeof data.error === 'string') {
+                errMsg = data.error;
+              }
+            } catch { /* JSON parse failure — use generic message */ }
+            showFormError(errMsg);
+          }
+        } catch {
+          showFormError('ネットワークエラーが発生しました。接続をご確認のうえ再度お試しください。');
+        } finally {
+          submitBtn.disabled = false;
+          submitBtn.textContent = '→ 無償 PoC 枠に申し込む（限定 5 社）';
+        }
+      });
+    })();
+  </script>
+
+</body>
+</html>

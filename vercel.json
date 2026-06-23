@@ -1,0 +1,14 @@
+{
+  "builds": [
+    {
+      "src": "web-ui/src/index.ts",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/web-ui/src/index.ts"
+    }
+  ]
+}

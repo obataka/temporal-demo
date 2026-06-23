@@ -94,6 +94,9 @@ class sop_generation_workflow:
         # 現在アクティブなエージェント名（UI パルス表示用）
         self._active_agent: str | None = None
 
+        # エージェント実行中の暫定ステータス文（Activity 完了前に UI へ届ける）
+        self._agent_status_log: str = ""
+
     # ─── Signal Handlers ─────────────────────────────────────────────────────
 
     @workflow.signal
@@ -145,6 +148,7 @@ class sop_generation_workflow:
             "human_feedback": self._human_feedback,
             "agent_logs": "\n\n---\n\n".join(self._agent_logs) if self._agent_logs else "",
             "active_agent": self._active_agent,
+            "agent_status_log": self._agent_status_log,
         }
 
     @workflow.query
@@ -403,6 +407,7 @@ class sop_generation_workflow:
         :returns: Writer の修正済み SOP と Reviewer の監査ログを含む LLMResult
         """
         self._active_agent = "Writer"
+        self._agent_status_log = "[Writer] 修正案を生成中..."
         writer_result = await workflow.execute_activity(
             writer_task_activity,
             args=[sop_text, failures, human_feedback, self._fix_attempt],
@@ -411,6 +416,7 @@ class sop_generation_workflow:
         )
 
         self._active_agent = "Reviewer"
+        self._agent_status_log = "[Reviewer] セキュリティ・品質チェック中..."
         reviewer_result = await workflow.execute_activity(
             reviewer_task_activity,
             args=[writer_result.text],
@@ -419,6 +425,7 @@ class sop_generation_workflow:
         )
 
         self._active_agent = None
+        self._agent_status_log = ""
         return LLMResult(
             text=writer_result.text,
             model=writer_result.model,

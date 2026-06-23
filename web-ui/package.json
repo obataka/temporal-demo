@@ -5,7 +5,13 @@
     "start": "bun run src/index.ts"
   },
   "dependencies": {
+    "@temporalio/client": "^1.16.2",
     "hono": "^4.7.0",
-    "@temporalio/client": "^1.16.2"
+    "nodemailer": "^9.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.0.0",
+    "@types/nodemailer": "^8.0.1",
+    "typescript": "^6.0.3"
   }
 }

@@ -105,6 +105,20 @@
         <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider">AI エージェントの思考ログ</h2>
         <span id="agentLogsBadge" class="hidden text-xs px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-600 font-medium">更新中</span>
       </div>
+      <!-- エージェントステータスバッジ -->
+      <div class="flex gap-3 mb-3">
+        <span id="badge-writer"
+              class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono bg-slate-800 text-slate-500 border border-slate-700 select-none">
+          <span class="inline-block w-1.5 h-1.5 rounded-full bg-slate-600"></span>
+          Writer
+        </span>
+        <span id="badge-reviewer"
+              class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono bg-slate-800 text-slate-500 border border-slate-700 select-none">
+          <span class="inline-block w-1.5 h-1.5 rounded-full bg-slate-600"></span>
+          Reviewer
+        </span>
+      </div>
+
       <div id="agentLogsContainer" class="bg-slate-900 rounded-lg p-4 max-h-60 overflow-y-auto">
         <p id="agentLogsPlaceholder" class="font-mono text-xs text-slate-500">現在、エージェントの思考ログはありません。</p>
         <pre id="agentLogsContent" class="hidden font-mono text-xs text-slate-200 whitespace-pre-wrap break-words leading-relaxed"></pre>
@@ -134,6 +148,13 @@
 
     let currentWorkflowId = null;
     let pollingTimer      = null;
+    let typingCursor      = null;
+
+    const BADGE_STATES = {
+      inactive: { badge: ['bg-slate-800',   'text-slate-500',  'border-slate-700'],  dot: ['bg-slate-600']                    },
+      writer:   { badge: ['bg-emerald-950', 'text-emerald-400','border-emerald-500'], dot: ['bg-emerald-400', 'animate-pulse'] },
+      reviewer: { badge: ['bg-amber-950',   'text-amber-400',  'border-amber-500'],   dot: ['bg-amber-400',   'animate-pulse'] },
+    };
 
     // --- agentLogs 表示更新 ---
     function updateAgentLogs(logs) {
@@ -155,6 +176,56 @@
       // 末尾付近にいた場合のみ自動スクロール（読み中は位置を維持）
       if (isNearBottom) {
         agentLogsContainer.scrollTop = agentLogsContainer.scrollHeight;
+      }
+    }
+
+    // --- エージェントステータスバッジ切替 ---
+    function updateAgentBadges(agent) {
+      const writerEl    = document.getElementById('badge-writer');
+      const reviewerEl  = document.getElementById('badge-reviewer');
+      const writerDot   = writerEl.querySelector('span');
+      const reviewerDot = reviewerEl.querySelector('span');
+      const allBadge = Object.values(BADGE_STATES).flatMap(s => s.badge);
+      const allDot   = Object.values(BADGE_STATES).flatMap(s => s.dot);
+
+      writerEl.classList.remove(...allBadge);
+      reviewerEl.classList.remove(...allBadge);
+      writerDot.classList.remove(...allDot);
+      reviewerDot.classList.remove(...allDot);
+
+      const writerState   = agent === 'Writer'   ? BADGE_STATES.writer   : BADGE_STATES.inactive;
+      const reviewerState = agent === 'Reviewer' ? BADGE_STATES.reviewer : BADGE_STATES.inactive;
+
+      writerEl.classList.add(...writerState.badge);
+      writerDot.classList.add(...writerState.dot);
+      reviewerEl.classList.add(...reviewerState.badge);
+      reviewerDot.classList.add(...reviewerState.dot);
+
+      // タイピングカーソル制御
+      if (agent !== null) {
+        showTypingCursor();
+      } else {
+        hideTypingCursor();
+      }
+    }
+
+    // --- タイピングカーソル ---
+    function showTypingCursor() {
+      if (typingCursor) return;
+      agentLogsPlaceholder.classList.add('hidden');
+      typingCursor = document.createElement('span');
+      typingCursor.className = 'block font-mono text-xs text-slate-400 animate-pulse mt-1 select-none';
+      typingCursor.textContent = '_';
+      agentLogsContainer.appendChild(typingCursor);
+      agentLogsContainer.scrollTop = agentLogsContainer.scrollHeight;
+    }
+
+    function hideTypingCursor() {
+      if (!typingCursor) return;
+      typingCursor.remove();
+      typingCursor = null;
+      if (agentLogsContent.classList.contains('hidden')) {
+        agentLogsPlaceholder.classList.remove('hidden');
       }
     }
 
@@ -266,8 +337,18 @@
           ? data.current_output
           : '（SOP テキストはまだ生成されていません）';
 
-        // agentLogs 更新
-        updateAgentLogs(data.agentLogs ?? '');
+        // agentLogs 更新（active_agent 実行中はステータスログを末尾に付加）
+        const activeAgent    = data.active_agent ?? data.activeAgent ?? null;
+        const agentLogs      = data.agentLogs ?? '';
+        const agentStatusLog = data.agent_status_log ?? data.agentStatusLog ?? '';
+        let displayLogs = agentLogs;
+        if (activeAgent && agentStatusLog) {
+          displayLogs = agentLogs
+            ? `${agentLogs}\n\n---\n\n${agentStatusLog}`
+            : agentStatusLog;
+        }
+        updateAgentLogs(displayLogs);
+        updateAgentBadges(activeAgent);
 
         // 承認・差し戻しボタン制御
         const isAwaiting = data.status === 'awaiting_pr_approval';
