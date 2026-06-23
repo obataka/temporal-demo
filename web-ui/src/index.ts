@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { handle } from "hono/vercel";
+import { serveStatic } from "hono/bun";
 import { Client, Connection } from "@temporalio/client";
 import nodemailer from "nodemailer";
 
@@ -212,5 +213,11 @@ app.post("/api/contact", async (c) => {
   }
 });
 
+app.use("/*", serveStatic({ root: "./public" }));
+
+// Vercel Serverless Functions (Node.js runtime)
 export const GET = handle(app);
 export const POST = handle(app);
+
+// Bun HTTP server (local Docker)
+export default { port: 3000, fetch: app.fetch };

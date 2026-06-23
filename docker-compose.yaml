@@ -113,6 +113,8 @@ services:
   web-ui:
     container_name: temporal-web-ui
     build: ./web-ui
+    env_file:
+      - .env
     environment:
       - TEMPORAL_HOST=temporal:7233
     networks:

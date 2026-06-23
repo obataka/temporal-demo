@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "timestamp": "2026-06-23T01:35:01.729Z",
+  "timestamp": "2026-06-23T02:13:48.070Z",
   "source": "auto-postool",
   "partial": false,
   "phase": null,
@@ -18,165 +18,13 @@
   "uncommitted_files": [
     {
       "status": "M",
-      "path": ".env.example"
-    },
-    {
-      "status": "M",
       "path": ".planning/HANDOFF.json"
     },
     {
       "status": "M",
-      "path": "web-ui/package.json"
-    },
-    {
-      "status": "M",
-      "path": "web-ui/public/index.html"
-    },
-    {
-      "status": "M",
       "path": "web-ui/src/index.ts"
-    },
-    {
-      "status": "M",
-      "path": "workflows/sop_workflow.py"
-    },
-    {
-      "status": "??",
-      "path": "docs/marketing_copy_skeleton.md"
-    },
-    {
-      "status": "??",
-      "path": "docs/marketing_demo_spec.md"
-    },
-    {
-      "status": "??",
-      "path": "e2e_active_agent_audit.py"
-    },
-    {
-      "status": "??",
-      "path": "plan/2026-06-08-01-agent-status-badges-plan.md"
-    },
-    {
-      "status": "??",
-      "path": "plan/2026-06-08-02-active-agent-badge-control-plan.md"
-    },
-    {
-      "status": "??",
-      "path": "plan/2026-06-08-03-pulse-animation-cursor-plan.md"
-    },
-    {
-      "status": "??",
-      "path": "plan/2026-06-08-04-cursor-visibility-incremental-log-plan.md"
-    },
-    {
-      "status": "??",
-      "path": "plan/2026-06-10-01-rehearsal-fix-plan.md"
-    },
-    {
-      "status": "??",
-      "path": "plan/2026-06-10-02-lp-plan.md"
-    },
-    {
-      "status": "??",
-      "path": "plan/2026-06-15-01-hitl-pause-plan.md"
-    },
-    {
-      "status": "??",
-      "path": "plan/2026-06-16-01-lp-cta-footer-plan.md"
-    },
-    {
-      "status": "??",
-      "path": "plan/2026-06-17-01-lp-true-value-plan.md"
-    },
-    {
-      "status": "??",
-      "path": "plan/2026-06-22-01-lp-video-modal-plan.md"
-    },
-    {
-      "status": "??",
-      "path": "plan/2026-06-22-02-lp-contact-form-plan.md"
-    },
-    {
-      "status": "??",
-      "path": "plan/2026-06-23-01-vercel-adapter-plan.md"
-    },
-    {
-      "status": "??",
-      "path": "rehearsal_audit.py"
-    },
-    {
-      "status": "??",
-      "path": "result/2026-06-08-01-agent-status-badges.md"
-    },
-    {
-      "status": "??",
-      "path": "result/2026-06-08-02-active-agent-badge-control.md"
-    },
-    {
-      "status": "??",
-      "path": "result/2026-06-08-03-pulse-animation-cursor.md"
-    },
-    {
-      "status": "??",
-      "path": "result/2026-06-08-04-e2e-active-agent-audit.md"
-    },
-    {
-      "status": "??",
-      "path": "result/2026-06-08-05-cursor-visibility-incremental-log.md"
-    },
-    {
-      "status": "??",
-      "path": "result/2026-06-09-01-marketing-demo-spec.md"
-    },
-    {
-      "status": "??",
-      "path": "result/2026-06-09-02-marketing-copy-skeleton.md"
-    },
-    {
-      "status": "??",
-      "path": "result/2026-06-10-01-rehearsal-audit.md"
-    },
-    {
-      "status": "??",
-      "path": "result/2026-06-10-02-lp-html.md"
-    },
-    {
-      "status": "??",
-      "path": "result/2026-06-15-01-hitl-pause.md"
-    },
-    {
-      "status": "??",
-      "path": "result/2026-06-16-01-lp-cta-footer.md"
-    },
-    {
-      "status": "??",
-      "path": "result/2026-06-17-01-lp-true-value.md"
-    },
-    {
-      "status": "??",
-      "path": "result/2026-06-22-01-lp-video-modal.md"
-    },
-    {
-      "status": "??",
-      "path": "result/2026-06-22-02-lp-contact-form.md"
-    },
-    {
-      "status": "??",
-      "path": "vercel.json"
-    },
-    {
-      "status": "??",
-      "path": "web-ui/package-lock.json"
-    },
-    {
-      "status": "??",
-      "path": "web-ui/public/lp.html"
-    },
-    {
-      "status": "??",
-      "path": "web-ui/public/videos/"
     }
   ],
   "next_action": null,
-  "context_notes": "Recent commits:\nf79ddfc feat: Writer/Reviewer Activity 分割・エージェントログ UI・temperature チューニング\n3f22fe2 Temporal + Bun・Hono基盤の実装\n0bac801 temporalコンテナ実装\n2cd2d98 feat: add GitHub PR activity, approve_pr Signal gate, and integration tests\ncb534e3 feat: add no_prohibited_terms validation rule with TDD"
+  "context_notes": "Recent commits:\n71c4738 .env.exampleのコミット\n63b0a37 chore: migrate backend to vercel serverless architecture\nf79ddfc feat: Writer/Reviewer Activity 分割・エージェントログ UI・temperature チューニング\n3f22fe2 Temporal + Bun・Hono基盤の実装\n0bac801 temporalコンテナ実装"
 }
