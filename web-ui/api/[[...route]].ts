@@ -215,6 +215,3 @@ app.post("/api/contact", async (c) => {
 // Vercel Serverless Functions (Node.js runtime)
 export const GET = handle(app);
 export const POST = handle(app);
-
-// Bun HTTP server (local Docker)
-export default { port: 3000, fetch: app.fetch };
