@@ -1,6 +1,5 @@
 import { Hono } from "hono";
 import { handle } from "hono/vercel";
-import { serveStatic } from "hono/bun";
 import { Client, Connection } from "@temporalio/client";
 import nodemailer from "nodemailer";
 
@@ -212,8 +211,6 @@ app.post("/api/contact", async (c) => {
     return c.json({ error: "Internal error" }, 500);
   }
 });
-
-app.use("/*", serveStatic({ root: "./public" }));
 
 // Vercel Serverless Functions (Node.js runtime)
 export const GET = handle(app);
