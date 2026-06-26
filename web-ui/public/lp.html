@@ -528,17 +528,19 @@
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-5">
           <div>
-            <label for="name" class="block text-slate-700 text-sm font-semibold mb-1.5">お名前 <span class="text-red-500">*</span></label>
+            <label for="fullname" class="block text-slate-700 text-sm font-semibold mb-1.5">お名前 <span class="text-red-500">*</span></label>
             <input
-              type="text" id="name" name="name" required
+              type="text" id="fullname" name="fullname" required
+              autocomplete="name"
               placeholder="山田 太郎"
               class="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition"
             />
           </div>
           <div>
-            <label for="company" class="block text-slate-700 text-sm font-semibold mb-1.5">会社名 <span class="text-red-500">*</span></label>
+            <label for="org-name" class="block text-slate-700 text-sm font-semibold mb-1.5">会社名 <span class="text-red-500">*</span></label>
             <input
-              type="text" id="company" name="company" required
+              type="text" id="org-name" name="org-name" required
+              autocomplete="organization"
               placeholder="株式会社〇〇"
               class="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition"
             />
@@ -546,9 +548,10 @@
         </div>
 
         <div class="mb-5">
-          <label for="email" class="block text-slate-700 text-sm font-semibold mb-1.5">メールアドレス <span class="text-red-500">*</span></label>
+          <label for="contact-addr" class="block text-slate-700 text-sm font-semibold mb-1.5">連絡先メールアドレス <span class="text-red-500">*</span></label>
           <input
-            type="email" id="email" name="email" required
+            type="text" id="contact-addr" name="contact-addr" required
+            autocomplete="email"
             placeholder="taro.yamada@example.com"
             class="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition"
           />
@@ -719,9 +722,9 @@
         e.preventDefault();
         hideFormError();
 
-        const name    = form.querySelector('#name').value.trim();
-        const company = form.querySelector('#company').value.trim();
-        const email   = form.querySelector('#email').value.trim();
+        const name    = form.querySelector('#fullname').value.trim();
+        const company = form.querySelector('#org-name').value.trim();
+        const email   = form.querySelector('#contact-addr').value.trim();
         const message = form.querySelector('#message').value.trim();
         const sopAttachment = form.querySelector('#sop-attachment').checked;
 
