@@ -579,6 +579,23 @@
           </label>
         </div>
 
+        <div class="mb-6">
+          <label class="flex items-start gap-3 cursor-pointer group">
+            <div class="flex-shrink-0 mt-0.5">
+              <input type="checkbox" id="privacy-consent" name="privacy_consent"
+                class="w-4 h-4 rounded border-gray-300 text-emerald-500 focus:ring-emerald-400 accent-emerald-500" />
+            </div>
+            <div>
+              <span class="block text-slate-700 text-sm font-semibold">
+                <button type="button" onclick="openPrivacyModal()"
+                  class="text-indigo-600 hover:text-indigo-500 underline underline-offset-2 font-semibold transition-colors">プライバシーポリシー</button>
+                に同意する <span class="text-red-500">*</span>
+              </span>
+              <span class="block text-slate-400 text-xs mt-0.5">お預かりした個人情報および手順書データは PoC 目的のみに使用し、終了後 30 日以内に削除します</span>
+            </div>
+          </label>
+        </div>
+
         <div id="form-error" class="hidden mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm"></div>
 
         <button
@@ -590,7 +607,8 @@
 
         <p class="mt-4 text-slate-400 text-xs text-center">
           ※ 先着 5 社に達し次第、受付を一時停止します。<br>
-          PoC 期間中のサポートはテキストコミュニケーション（Slack 等）限定です。
+          PoC 期間中のサポートはテキストコミュニケーション（Slack 等）限定です。<br>
+          ※ 本システムはプロトタイプです。AI による出力の正確性・完全性を保証しません。出力内容に基づく意思決定の責任は申込者様にあります。
         </p>
       </form>
 
@@ -600,7 +618,14 @@
   <!-- ===== FOOTER ===== -->
   <footer class="bg-slate-950 border-t border-slate-800 py-8">
     <div class="max-w-6xl mx-auto px-6 text-center">
-      <p class="text-slate-500 text-sm">Copyright © 2026 SOP Platform Labs. All rights reserved.</p>
+      <p class="text-slate-500 text-sm">
+        Copyright © 2026 SOP Platform Labs. All rights reserved.
+        <span class="mx-2">·</span>
+        <button type="button" onclick="openPrivacyModal()"
+          class="text-slate-400 hover:text-slate-200 underline underline-offset-2 transition-colors text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 rounded">
+          プライバシーポリシー
+        </button>
+      </p>
     </div>
   </footer>
 
@@ -624,6 +649,85 @@
         class="px-8 py-3 bg-emerald-500 hover:bg-emerald-400 text-white font-semibold rounded-xl transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400">
         閉じる
       </button>
+    </div>
+  </div>
+
+  <!-- ===== PRIVACY POLICY MODAL ===== -->
+  <div id="privacy-modal"
+       class="fixed inset-0 z-[120] hidden items-center justify-center bg-slate-950/90 backdrop-blur-sm px-4 sm:px-6"
+       role="dialog" aria-modal="true" aria-labelledby="privacy-modal-title">
+    <div class="relative w-full max-w-2xl mx-auto bg-slate-800 border border-slate-700/60 rounded-2xl shadow-2xl shadow-black/60 max-h-[85vh] flex flex-col">
+      <!-- Header -->
+      <div class="flex items-center justify-between px-8 py-5 border-b border-slate-700/60 flex-shrink-0">
+        <h2 id="privacy-modal-title" class="text-white font-bold text-lg">プライバシーポリシー</h2>
+        <button type="button" onclick="closePrivacyModal()" aria-label="閉じる"
+          class="text-slate-400 hover:text-white transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 rounded">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <!-- Body -->
+      <div class="overflow-y-auto px-8 py-6 text-slate-300 text-sm leading-relaxed space-y-6">
+
+        <p>SOP Platform Labs（以下「当方」）は、無償 PoC へのお申し込みにあたって取得した個人情報を、以下のとおり取り扱います。</p>
+
+        <section>
+          <h3 class="text-white font-semibold mb-2">1. 収集する情報</h3>
+          <ul class="list-disc list-inside space-y-1 text-slate-400">
+            <li>お名前</li>
+            <li>会社名</li>
+            <li>メールアドレス</li>
+            <li>お問い合わせ内容（任意）</li>
+            <li>手順書データ（Markdown 化代行を希望された場合のみ）</li>
+          </ul>
+        </section>
+
+        <section>
+          <h3 class="text-white font-semibold mb-2">2. 利用目的</h3>
+          <p>取得した情報は、無償 PoC の実施に関する連絡・調整・サポートのみに使用します。目的外での利用は行いません。</p>
+        </section>
+
+        <section>
+          <h3 class="text-white font-semibold mb-2">3. 第三者提供</h3>
+          <p>法令に基づく場合を除き、取得した情報を第三者に提供・開示することはありません。</p>
+        </section>
+
+        <section>
+          <h3 class="text-white font-semibold mb-2">4. 手順書データの取り扱い</h3>
+          <p>お送りいただいた SOP・手順書等のデータ（Excel / Word / PDF 等）は、以下のとおり管理します。</p>
+          <ul class="list-disc list-inside space-y-1 text-slate-400 mt-2">
+            <li>PoC 目的以外には一切使用しません</li>
+            <li>外部サーバー・クラウドサービスへの送信は行いません（お客様の Docker 環境内で完結）</li>
+            <li>PoC 終了後 30 日以内に当方の環境から削除します</li>
+          </ul>
+        </section>
+
+        <section>
+          <h3 class="text-white font-semibold mb-2">5. 保管期間</h3>
+          <p>個人情報は PoC 終了後 30 日をもって削除します。</p>
+        </section>
+
+        <section>
+          <h3 class="text-white font-semibold mb-2">6. 免責</h3>
+          <p>本システムはプロトタイプです。AI による出力の正確性・完全性を保証しません。出力内容に基づく意思決定の責任はお客様にあります。</p>
+        </section>
+
+        <section>
+          <h3 class="text-white font-semibold mb-2">7. お問い合わせ</h3>
+          <p>個人情報の開示・訂正・削除のご要望は下記までご連絡ください。</p>
+          <p class="mt-1 text-emerald-400 font-mono">obataka123@gmail.com</p>
+        </section>
+
+        <p class="text-slate-500 text-xs">制定日：2026年6月29日　SOP Platform Labs</p>
+      </div>
+      <!-- Footer -->
+      <div class="px-8 py-5 border-t border-slate-700/60 flex-shrink-0 text-center">
+        <button type="button" onclick="closePrivacyModal()"
+          class="px-8 py-3 bg-emerald-500 hover:bg-emerald-400 text-white font-semibold rounded-xl transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400">
+          閉じる
+        </button>
+      </div>
     </div>
   </div>
 
@@ -682,6 +786,27 @@
         }
       });
 
+      // ── Privacy policy modal ─────────────────────────────────────────────────
+      const privacyModal = document.getElementById('privacy-modal');
+
+      window.openPrivacyModal = function () {
+        privacyModal.classList.remove('hidden');
+        privacyModal.classList.add('flex');
+        document.body.classList.add('overflow-hidden');
+      };
+
+      window.closePrivacyModal = function () {
+        privacyModal.classList.add('hidden');
+        privacyModal.classList.remove('flex');
+        document.body.classList.remove('overflow-hidden');
+      };
+
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && !privacyModal.classList.contains('hidden')) {
+          window.closePrivacyModal();
+        }
+      });
+
       // ── Contact success modal ────────────────────────────────────────────────
       const successModal = document.getElementById('contact-success-modal');
 
@@ -727,6 +852,12 @@
         const email   = form.querySelector('#contact-addr').value.trim();
         const message = form.querySelector('#message').value.trim();
         const sopAttachment = form.querySelector('#sop-attachment').checked;
+        const privacyConsent = form.querySelector('#privacy-consent').checked;
+
+        if (!privacyConsent) {
+          showFormError('プライバシーポリシーへの同意が必要です。');
+          return;
+        }
 
         submitBtn.disabled = true;
         submitBtn.textContent = '送信中...';
