@@ -10,20 +10,20 @@
         "name": "price_gemini_flash_in",
         "type": "textbox",
         "label": "Gemini 2.5 Flash In ($/M tokens)",
-        "current": { "selected": false, "text": "0.075", "value": "0.075" },
+        "current": { "selected": false, "text": "0.30", "value": "0.30" },
         "hide": 0,
         "options": [],
-        "query": "0.075",
+        "query": "0.30",
         "skipUrlSync": false
       },
       {
         "name": "price_gemini_flash_out",
         "type": "textbox",
         "label": "Gemini 2.5 Flash Out ($/M tokens)",
-        "current": { "selected": false, "text": "0.300", "value": "0.300" },
+        "current": { "selected": false, "text": "2.50", "value": "2.50" },
         "hide": 0,
         "options": [],
-        "query": "0.300",
+        "query": "2.50",
         "skipUrlSync": false
       },
       {
@@ -93,7 +93,7 @@
       "id": 4,
       "type": "stat",
       "title": "Real-time Operational Expenditures (OpEx)",
-      "description": "Estimated cumulative cost in USD since worker startup. Unit prices are overridable via Variables at the top of this dashboard (default: Gemini 2.5 Flash at $0.075/$0.30 per 1M tokens).",
+      "description": "Estimated cumulative cost in USD since worker startup. Unit prices are overridable via Variables at the top of this dashboard (default: Gemini 2.5 Flash at $0.30/$2.50 per 1M tokens).",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
         "defaults": {

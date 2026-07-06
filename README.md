@@ -35,7 +35,7 @@ python run_comparison.py "信頼性の高いシステム設計について教え
 | Service | URL |
 |---|---|
 | Temporal UI | http://localhost:8080 |
-| Grafana Dashboard | http://localhost:3000 |
+| Grafana Dashboard | http://localhost:3001 |
 | Prometheus | http://localhost:9090 |
 | Worker Metrics | http://localhost:8000/metrics |
 

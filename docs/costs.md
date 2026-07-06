@@ -8,7 +8,7 @@
 
 | モデル | Input | Output | 出典 |
 |---|---|---|---|
-| `gemini-2.5-flash` | $0.075 | $0.300 | [Google AI Pricing](https://ai.google.dev/pricing) |
+| `gemini-2.5-flash` | $0.30 | $2.50 | [Google AI Pricing](https://ai.google.dev/pricing) |
 | `gemini-2.0-flash` | $0.100 | $0.400 | [Google AI Pricing](https://ai.google.dev/pricing) |
 | `mock-llm-v1`      | $0.100 | $0.100 | デモ用仮単価（実際の課金なし）|
 
@@ -22,7 +22,7 @@
 
 ```python
 _MODEL_PRICES_USD_PER_MILLION: dict[str, dict[str, float]] = {
-    "gemini-2.5-flash": {"input": 0.075, "output": 0.30},
+    "gemini-2.5-flash": {"input": 0.30, "output": 2.50},
     "gemini-2.0-flash": {"input": 0.10,  "output": 0.40},
     "mock-llm-v1":      {"input": 0.10,  "output": 0.10},
 }
@@ -46,8 +46,8 @@ sum by(model) (
 
 | 変数名 | デフォルト値 | 対応モデル |
 |---|---|---|
-| `price_gemini_flash_in`  | 0.075 | gemini-2.5-flash / input  |
-| `price_gemini_flash_out` | 0.300 | gemini-2.5-flash / output |
+| `price_gemini_flash_in`  | 0.30 | gemini-2.5-flash / input  |
+| `price_gemini_flash_out` | 2.50 | gemini-2.5-flash / output |
 | `price_mock_in`          | 0.100 | mock-llm-v1 / input       |
 | `price_mock_out`         | 0.100 | mock-llm-v1 / output      |
 

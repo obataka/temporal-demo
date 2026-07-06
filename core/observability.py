@@ -53,7 +53,7 @@ llm_inference_latency_seconds = Histogram(
 # モデル別単価テーブル（USD / 1M tokens）
 # 価格改定時はここだけ変更すれば PromQL 側は変更不要
 _MODEL_PRICES_USD_PER_MILLION: dict[str, dict[str, float]] = {
-    "gemini-2.5-flash": {"input": 0.075, "output": 0.30},
+    "gemini-2.5-flash": {"input": 0.30, "output": 2.50},
     "gemini-2.0-flash": {"input": 0.10,  "output": 0.40},
     "mock-llm-v1":      {"input": 0.10,  "output": 0.10},  # デモ用仮単価
 }

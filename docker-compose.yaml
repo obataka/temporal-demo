@@ -4,7 +4,7 @@ services:
   postgresql:
     container_name: temporal-postgresql
     environment:
-      POSTGRES_PASSWORD: temporal
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-pgLocalDev_7f3a}
       POSTGRES_USER: temporal
     image: postgres:13
     networks:
@@ -22,7 +22,7 @@ services:
       - DB=postgres12
       - DB_PORT=5432
       - POSTGRES_USER=temporal
-      - POSTGRES_PWD=temporal
+      - POSTGRES_PWD=${POSTGRES_PASSWORD:-pgLocalDev_7f3a}
       - POSTGRES_SEEDS=postgresql
     image: temporalio/auto-setup:1.26.2
     networks:
@@ -99,7 +99,7 @@ services:
     depends_on:
       - prometheus
     environment:
-      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-grafanaLocalDev_9c1e}
       - GF_AUTH_ANONYMOUS_ENABLED=true
       - GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer
     volumes:
