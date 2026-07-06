@@ -1,13 +1,66 @@
-# The Immortal AI Agent
+# Temporal × CrewAI: Durable Multi-Agent Workflows with Strict Human Governance
 
-Temporal ワークフローエンジンと LLM (Google Gemini) を組み合わせた、
-**障害に強く・コスト可視化済みの AI エージェント**プロトタイプ。
+*A reference implementation for running multi-agent LLM systems under hard human-approval gates — built on Temporal for durable state and explicit retry policy.*
 
+---
+
+## Why This Exists
+
+「AIエージェント」demoの多くは、プロセス内メモリで状態を保持し、人間承認を任意のUI装飾として扱い、深夜のLLM APIタイムアウトに対する answer を持たない。実運用では、承認待ちは数日単位で継続し、LLM呼び出しはレート制限や一時障害で日常的に失敗し、Human-in-the-Loopはポーリングで代替できるものではない。本リポジトリは、**プロセス死・デプロイ・クラッシュを跨いで状態を保持し、明示的なリトライポリシーで失敗を処理し、人間の判断を無期限にブロックできる**アーキテクチャの参照実装である。
+
+---
+
+## Design Patterns Demonstrated
+
+以下4パターンは `workflows/sop_workflow.py` / `activities/fix_sop_activity.py` に実装済み。詳細な設計判断は [技術記事](technical-article-temporal-crewai-hitl.md) を参照。
+
+### 1. Determinism & Replay
+Temporal WorkflowはWorker再起動時にEvent Historyから*リプレイ*される。決定論を壊す依存（CrewAI）はWorkflowモジュール直下でimportしない。
+
+```python
+# workflows/sop_workflow.py:35-43 (一部省略)
+with workflow.unsafe.imports_passed_through():
+    from activities.sop_activity import generate_sop_phase_activity
+    ...
+    from activities.fix_sop_activity import (
+        fix_sop_with_crew_activity,
+        writer_task_activity,
+        reviewer_task_activity,
+    )
+    ...
 ```
-docker compose up --build
+
+### 2. Push-based Human-in-the-Loop
+ポーリングではなく`Signal` + `wait_condition`によるブロッキング待機。Activity実行中に届いたSignalも取りこぼさない。
+
+```python
+# workflows/sop_workflow.py:209
+await workflow.wait_condition(lambda: self._signal_received)
 ```
 
-これだけで全スタックが起動する。
+### 3. Activity-grained Multi-Agent Execution
+CrewAIのWriter/Reviewerを単一`Crew.kickoff()`に束ねず、別Activityに分解。Reviewerが失敗してもWriterの出力は再実行・再課金されない。
+
+```python
+# activities/fix_sop_activity.py:253 / :348
+async def writer_task_activity(...) -> LLMResult: ...
+async def reviewer_task_activity(...) -> LLMResult: ...
+```
+
+### 4. Zero-Downtime Versioning
+稼働中のワークフローを壊さずにコードパスを切り替える`workflow.patched()`。実際にWriter/Reviewer分割リファクタ（コミット `f79ddfc`）で使用した。
+
+```python
+# workflows/sop_workflow.py:382-389
+if workflow.patched("split-writer-reviewer"):
+    return await self._call_fix_decomposed(sop_text, failures, human_feedback)
+return await workflow.execute_activity(
+    fix_sop_with_crew_activity,
+    args=[sop_text, failures, human_feedback, self._fix_attempt],
+    start_to_close_timeout=timedelta(minutes=7),
+    retry_policy=LLM_RETRY_POLICY,
+)
+```
 
 ---
 
@@ -41,7 +94,21 @@ python run_comparison.py "信頼性の高いシステム設計について教え
 
 ---
 
-## Architecture
+## Reference Implementation: SOP Auto-Improvement Pipeline
+
+`workflows/sop_workflow.py` (`sop_generation_workflow`) が実装するドメインは付随的で、パターンそのものが本体である。LLMが3フェーズでSOPドラフトを生成し、各フェーズで人間が承認/差し戻しを行い、CrewAI（Writer/Reviewer）が自律的にバリデーション失敗を修正し、最終的にGitHub PRの作成にも人間承認ゲートがかかる。
+
+```
+Phase 1-3: outline → draft → review   （各フェーズごとに承認 Signal 待ち）
+Phase 4:   autonomous_fix              （バリデーション → CrewAI修正、最大3回）
+Phase 5:   github_pr                   （require_approval=True 時、承認 Signal 待ち）
+```
+
+4つの人間判断ゲートはすべて `@workflow.signal` によるハードゲートであり、advisory（任意）ではない。
+
+## Immortal AI Agent Demo Architecture
+
+上記SOPパイプラインとは別の、よりシンプルなdemo（`ai_agent_workflow`）も同梱している。Gemini呼び出しの障害耐性とコスト可視化の最小構成を確認したい場合はこちら。
 
 ```
 run_workflow.py ──gRPC──▶ Temporal Server
@@ -90,3 +157,15 @@ run_workflow.py ──gRPC──▶ Temporal Server
 | Gauge for pricing | `llm_price_per_million_tokens` Gauge + PromQL join | 単価改定時に PromQL を変更不要 |
 
 詳細: [`ARCHITECTURE.md`](ARCHITECTURE.md) / コスト設計: [`docs/costs.md`](docs/costs.md)
+
+---
+
+## Deep Dive
+
+- **設計思想の詳細解説**: [technical-article-temporal-crewai-hitl.md](technical-article-temporal-crewai-hitl.md)
+- **アーキテクチャ設計書**: [ARCHITECTURE.md](ARCHITECTURE.md)
+- **コスト設計・単価管理**: [docs/costs.md](docs/costs.md)
+
+## Live Demo
+
+- **Reference Architecture & Demo Video**: https://project-sy5bk-qyr66bsfr-obataka123.vercel.app/lp.html
