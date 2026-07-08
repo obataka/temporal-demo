@@ -6,19 +6,19 @@
 
 ## Why This Exists
 
-「AIエージェント」demoの多くは、プロセス内メモリで状態を保持し、人間承認を任意のUI装飾として扱い、深夜のLLM APIタイムアウトに対する answer を持たない。実運用では、承認待ちは数日単位で継続し、LLM呼び出しはレート制限や一時障害で日常的に失敗し、Human-in-the-Loopはポーリングで代替できるものではない。本リポジトリは、**プロセス死・デプロイ・クラッシュを跨いで状態を保持し、明示的なリトライポリシーで失敗を処理し、人間の判断を無期限にブロックできる**アーキテクチャの参照実装である。
+Most "AI agent" demos share three properties that make them unfit for production: they hold state in process memory, they treat human approval as an optional UI affordance rather than a hard gate, and they have no answer for what happens when a call to the LLM provider times out at 2am. In a real deployment, approval waits legitimately span days, LLM calls fail routinely on rate limits and transient errors, and Human-in-the-Loop cannot be implemented as polling without inheriting the failure modes of a distributed system you never admitted to building. This repository is a reference implementation of an architecture that **survives process death, deploys, and crashes; handles failure under an explicit retry policy; and blocks on human judgment for an unbounded period** — without hand-rolling that infrastructure.
 
 ---
 
 ## Design Patterns Demonstrated
 
-以下4パターンは `workflows/sop_workflow.py` / `activities/fix_sop_activity.py` に実装済み。詳細な設計判断は [技術記事](technical-article-temporal-crewai-hitl.md) を参照。
+The four patterns below are implemented in `workflows/sop_workflow.py` / `activities/fix_sop_activity.py`. For the full design rationale, see the [technical article](technical-article-temporal-crewai-hitl.md).
 
-### 1. Determinism & Replay
-Temporal WorkflowはWorker再起動時にEvent Historyから*リプレイ*される。決定論を壊す依存（CrewAI）はWorkflowモジュール直下でimportしない。
+### 1. Deterministic Sandbox Isolation
+A Temporal Workflow is *replayed* from its Event History whenever a Worker restarts, which means the workflow function itself must be deterministic. CrewAI is not sandbox-safe — it imports `os` directly and makes network calls — so it is never imported at the workflow module level. It is passed through explicitly and only ever invoked from inside an Activity, which is allowed side effects and is retried independently by the runtime.
 
 ```python
-# workflows/sop_workflow.py:35-43 (一部省略)
+# workflows/sop_workflow.py:35-43 (excerpt)
 with workflow.unsafe.imports_passed_through():
     from activities.sop_activity import generate_sop_phase_activity
     ...
@@ -31,7 +31,7 @@ with workflow.unsafe.imports_passed_through():
 ```
 
 ### 2. Push-based Human-in-the-Loop
-ポーリングではなく`Signal` + `wait_condition`によるブロッキング待機。Activity実行中に届いたSignalも取りこぼさない。
+Approval gates block on a `Signal` + `wait_condition`, not a poll. A Signal delivered while the preceding Activity is still executing is not lost — `wait_condition` picks it up the instant control returns to the workflow.
 
 ```python
 # workflows/sop_workflow.py:209
@@ -39,7 +39,7 @@ await workflow.wait_condition(lambda: self._signal_received)
 ```
 
 ### 3. Activity-grained Multi-Agent Execution
-CrewAIのWriter/Reviewerを単一`Crew.kickoff()`に束ねず、別Activityに分解。Reviewerが失敗してもWriterの出力は再実行・再課金されない。
+CrewAI's Writer and Reviewer are not bundled into a single `Crew.kickoff()`; they run as separate Activities. If the Reviewer's LLM call fails, only the Reviewer Activity is retried — the Writer's already-committed output is not re-run or re-billed.
 
 ```python
 # activities/fix_sop_activity.py:253 / :348
@@ -48,7 +48,7 @@ async def reviewer_task_activity(...) -> LLMResult: ...
 ```
 
 ### 4. Zero-Downtime Versioning
-稼働中のワークフローを壊さずにコードパスを切り替える`workflow.patched()`。実際にWriter/Reviewer分割リファクタ（コミット `f79ddfc`）で使用した。
+`workflow.patched()` switches a code path for new workflow instances without breaking instances already in flight. This was used in production when the fix-loop was refactored from a single CrewAI `kickoff()` into two separate Activities (commit `f79ddfc`) — workflows already running at deploy time kept using the old path.
 
 ```python
 # workflows/sop_workflow.py:382-389
@@ -67,21 +67,38 @@ return await workflow.execute_activity(
 ## Quick Start
 
 ```bash
-# 環境変数を設定
+# Set environment variables
 echo "GEMINI_API_KEY=your_key_here" > .env
 
-# 全スタック起動（Temporal + Worker + Prometheus + Grafana）
+# Start the full stack (Temporal + Worker + Prometheus + Grafana)
 docker compose up --build -d
 
-# Gemini ワークフローを実行
-python run_workflow.py "AIエージェントの設計原則を3つ教えてください"
+# Run the Gemini-backed workflow
+python run_workflow.py "Explain three principles of AI agent design"
 
-# モックモード（API キー不要）
-python run_workflow.py --mock "任意のプロンプト"
+# Mock mode (no API key required)
+python run_workflow.py --mock "any prompt"
 
-# Mock vs Gemini 比較デモ
-python run_comparison.py "信頼性の高いシステム設計について教えてください"
+# Mock vs Gemini comparison demo
+python run_comparison.py "Explain how to design highly reliable systems"
 ```
+
+## Docker Compose Setup
+
+`docker compose up` brings up a production-shaped, multi-container stack — no manual bootstrap steps beyond setting `GEMINI_API_KEY`.
+
+| Service | Role |
+|---|---|
+| `postgresql` | Persistent store backing the Temporal server |
+| `temporal` | Temporal server (gRPC frontend) |
+| `temporal-ui` | Temporal Web UI |
+| `temporal-init` | One-shot init container (`temporalio/admin-tools`) that registers custom Search Attributes (e.g. `Total_Tokens`) before the worker starts |
+| `worker` | Runs the workflows/activities and exposes Prometheus metrics |
+| `prometheus` | Scrapes worker metrics |
+| `grafana` | Cost/latency dashboards over the Prometheus data |
+| `web-ui` | HITL approval dashboard (Bun/Hono) |
+
+`temporal-init` removes the manual "register this Search Attribute by hand" step that most Temporal demos require — the stack is queryable by token cost the moment it's up.
 
 ## Endpoints
 
@@ -96,19 +113,19 @@ python run_comparison.py "信頼性の高いシステム設計について教え
 
 ## Reference Implementation: SOP Auto-Improvement Pipeline
 
-`workflows/sop_workflow.py` (`sop_generation_workflow`) が実装するドメインは付随的で、パターンそのものが本体である。LLMが3フェーズでSOPドラフトを生成し、各フェーズで人間が承認/差し戻しを行い、CrewAI（Writer/Reviewer）が自律的にバリデーション失敗を修正し、最終的にGitHub PRの作成にも人間承認ゲートがかかる。
+The domain implemented by `workflows/sop_workflow.py` (`sop_generation_workflow`) is incidental — the patterns are the point. An LLM drafts an SOP in three phases; a human approves or sends back feedback at each phase; an autonomous fix loop (CrewAI Writer/Reviewer) resolves validation failures; and a final human gate approves the resulting GitHub PR.
 
 ```
-Phase 1-3: outline → draft → review   （各フェーズごとに承認 Signal 待ち）
-Phase 4:   autonomous_fix              （バリデーション → CrewAI修正、最大3回）
-Phase 5:   github_pr                   （require_approval=True 時、承認 Signal 待ち）
+Phase 1-3: outline → draft → review   (blocks on an approval Signal per phase)
+Phase 4:   autonomous_fix              (validation → CrewAI fix, up to 3 attempts)
+Phase 5:   github_pr                   (blocks on an approval Signal when require_approval=True)
 ```
 
-4つの人間判断ゲートはすべて `@workflow.signal` によるハードゲートであり、advisory（任意）ではない。
+All four human judgment gates are hard gates enforced by `@workflow.signal` — none are advisory.
 
 ## Immortal AI Agent Demo Architecture
 
-上記SOPパイプラインとは別の、よりシンプルなdemo（`ai_agent_workflow`）も同梱している。Gemini呼び出しの障害耐性とコスト可視化の最小構成を確認したい場合はこちら。
+A simpler demo (`ai_agent_workflow`), separate from the SOP pipeline above, is included for verifying the minimal shape of fault-tolerant Gemini calls and cost observability.
 
 ```
 run_workflow.py ──gRPC──▶ Temporal Server
@@ -127,22 +144,22 @@ run_workflow.py ──gRPC──▶ Temporal Server
                               :8000/metrics ──▶ Prometheus ──▶ Grafana
 ```
 
-詳細な構成図（Mermaid）: [`docs/architecture_diagram.md`](docs/architecture_diagram.md)
+Full architecture diagram (Mermaid): [`docs/architecture_diagram.md`](docs/architecture_diagram.md)
 
 ---
 
 ## Business Value
 
-**なぜこの構成が企業のコスト削減・信頼性向上に寄与するか:**
+**Why this architecture reduces operating cost and improves reliability in production:**
 
-- **LLM 障害を無害化するゼロオペレーション・リカバリ**
-  Temporal の Event History により、LLM API の一時障害（レート制限・タイムアウト・ネットワーク断）が発生しても、ワークフローは自動でリトライし最終的に完了する。インフラエンジニアの夜間対応や手動再実行が不要になり、運用コストを大幅に削減する。
+- **Zero-operations recovery from LLM failures.**
+  Temporal's Event History lets the workflow retry transient LLM failures (rate limits, timeouts, network errors) automatically to completion. No on-call engineer has to manually re-run a job at 2am, and the retry policy is declared once and enforced by the runtime rather than scattered across call sites.
 
-- **リアルタイムの LLM コスト可視化によるベンダーロックイン回避**
-  Prometheus + Grafana によるモデル別コスト追跡（`OpEx by Model` パネル）により、どのモデルが予算をどれだけ消費しているかを秒単位で把握できる。モデル切り替えのコスト影響をダッシュボード上でシミュレートでき、ベンダー交渉や LLM プロバイダ乗り換えの意思決定を定量的に行える。
+- **Real-time LLM cost visibility to avoid vendor lock-in.**
+  Prometheus + Grafana track cost per model (`OpEx by Model` panel) at second-level granularity. The dashboard makes the cost impact of a model switch visible before you commit to it, turning vendor negotiation and provider migration into a quantitative decision.
 
-- **再現性のある観測可能なシステムで監査・コンプライアンスに対応**
-  全 LLM 呼び出しが structlog で JSON ログ化され、Temporal UI でワークフロー単位のトークン消費量（`Total_Tokens` Search Attribute）が永続記録される。「いつ・どのモデルで・何トークン使ったか」の完全な監査ログが `docker compose logs` と Temporal UI の2系統で確保され、コスト配賦・セキュリティ監査・SLA 証明に対応できる。
+- **A reproducible, observable system for audit and compliance.**
+  Every LLM call is logged as structured JSON via structlog, and per-workflow token consumption is persisted as a Temporal Search Attribute (`Total_Tokens`), queryable in the Temporal UI. Between `docker compose logs` and the Temporal UI, there is a complete audit trail of when a call was made, against which model, and how many tokens it used — sufficient for cost allocation, security audits, and SLA evidence.
 
 ---
 
@@ -150,21 +167,21 @@ run_workflow.py ──gRPC──▶ Temporal Server
 
 | Pattern | Implementation | Reason |
 |---|---|---|
-| Interceptor | `log_llm_interaction` context manager | LLM ロジックと観測を分離 |
-| Sandbox Isolation | `core/models.py` を structlog 非依存に | Temporal Workflow の決定論的実行を保証 |
-| Strategy | `use_mock` フラグで Gemini ↔ Mock 切り替え | CI/デモ環境でも同一コードを動作 |
-| Init Container | `temporalio/admin-tools` で Search Attribute 自動登録 | `docker compose up` だけで完結 |
-| Gauge for pricing | `llm_price_per_million_tokens` Gauge + PromQL join | 単価改定時に PromQL を変更不要 |
+| Interceptor | `log_llm_interaction` context manager | Separates LLM logic from observability |
+| Sandbox Isolation | `core/models.py` kept free of structlog | Preserves the Temporal Workflow's deterministic execution guarantee |
+| Strategy | `use_mock` flag switches Gemini ↔ Mock | Same code path runs in CI and in demos |
+| Init Container | `temporalio/admin-tools` auto-registers Search Attributes | The stack is fully queryable with a single `docker compose up` |
+| Gauge for pricing | `llm_price_per_million_tokens` Gauge + PromQL join | No PromQL changes needed when a per-token price changes |
 
-詳細: [`ARCHITECTURE.md`](ARCHITECTURE.md) / コスト設計: [`docs/costs.md`](docs/costs.md)
+Details: [`ARCHITECTURE.md`](ARCHITECTURE.md) / Cost design: [`docs/costs.md`](docs/costs.md)
 
 ---
 
 ## Deep Dive
 
-- **設計思想の詳細解説**: [technical-article-temporal-crewai-hitl.md](technical-article-temporal-crewai-hitl.md)
-- **アーキテクチャ設計書**: [ARCHITECTURE.md](ARCHITECTURE.md)
-- **コスト設計・単価管理**: [docs/costs.md](docs/costs.md)
+- **Full design rationale**: [technical-article-temporal-crewai-hitl.md](technical-article-temporal-crewai-hitl.md)
+- **Architecture document**: [ARCHITECTURE.md](ARCHITECTURE.md)
+- **Cost model & pricing management**: [docs/costs.md](docs/costs.md)
 
 ## Live Demo
 
